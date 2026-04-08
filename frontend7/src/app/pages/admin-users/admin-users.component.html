@@ -10,6 +10,7 @@
     </div>
 
     <p class="state" *ngIf="isLoading">Ucitavanje korisnika...</p>
+    <p class="state success" *ngIf="actionMessage">{{ actionMessage }}</p>
     <p class="state error" *ngIf="errorMessage">{{ errorMessage }}</p>
 
     <div class="table-wrap" *ngIf="!isLoading && !errorMessage">
@@ -21,6 +22,7 @@
             <th>Email</th>
             <th>Role</th>
             <th>Status</th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody>
@@ -33,6 +35,15 @@
               <span class="badge" [class.blocked]="user.isBlocked">
                 {{ user.isBlocked ? 'Blocked' : 'Active' }}
               </span>
+            </td>
+            <td>
+              <button
+                type="button"
+                class="action-btn"
+                (click)="blockUser(user)"
+                [disabled]="user.role === 'Admin' || user.isBlocked || isBlocking(user.id) || currentAdminId === null">
+                {{ user.isBlocked ? 'Blocked' : (isBlocking(user.id) ? 'Blocking...' : 'Block') }}
+              </button>
             </td>
           </tr>
         </tbody>

@@ -6,6 +6,11 @@ namespace StakeholdersService.Repositories;
 
 public class UserRepository(AppDbContext dbContext) : IUserRepository
 {
+    public async Task<User?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Users.FirstOrDefaultAsync(user => user.Id == id, cancellationToken);
+    }
+
     public async Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
         var normalizedEmail = email.Trim().ToLower();
@@ -46,5 +51,10 @@ public class UserRepository(AppDbContext dbContext) : IUserRepository
         dbContext.Users.Add(user);
         await dbContext.SaveChangesAsync(cancellationToken);
         return user;
+    }
+
+    public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        await dbContext.SaveChangesAsync(cancellationToken);
     }
 }
