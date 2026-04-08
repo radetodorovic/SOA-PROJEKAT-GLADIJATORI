@@ -1,0 +1,42 @@
+<section class="users-layout">
+  <article class="users-card">
+    <div class="users-header">
+      <div>
+        <p class="section-label">GLADIJATORI</p>
+        <h2>Svi korisnicki nalozi</h2>
+        <p>Pregled svih naloga iz sistema bez prikaza lozinki.</p>
+      </div>
+      <a routerLink="/" class="back-link">Nazad na auth</a>
+    </div>
+
+    <p class="state" *ngIf="isLoading">Ucitavanje korisnika...</p>
+    <p class="state error" *ngIf="errorMessage">{{ errorMessage }}</p>
+
+    <div class="table-wrap" *ngIf="!isLoading && !errorMessage">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let user of users">
+            <td>{{ user.id }}</td>
+            <td>{{ user.username }}</td>
+            <td>{{ user.email }}</td>
+            <td>{{ user.role }}</td>
+            <td>
+              <span class="badge" [class.blocked]="user.isBlocked">
+                {{ user.isBlocked ? 'Blocked' : 'Active' }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </article>
+</section>

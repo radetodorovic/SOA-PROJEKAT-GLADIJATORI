@@ -1,0 +1,6 @@
+.vs/
+.dotnet/
+bin/
+obj/
+node_modules/
+dist/

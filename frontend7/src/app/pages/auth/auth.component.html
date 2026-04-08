@@ -1,0 +1,77 @@
+<section class="auth-layout">
+  <article class="auth-card">
+    <div class="auth-copy">
+      <p class="section-label">GLADIJATORI</p>
+      <h2>Pristup nalogu</h2>
+      <p>
+        Izaberi da li zelis da se prijavis na postojeci nalog ili da napravis novi nalog
+        kao <strong>Guide</strong> ili <strong>Tourist</strong>.
+      </p>
+
+      <div class="mode-switch">
+        <button type="button" [class.active]="mode === 'login'" (click)="setMode('login')">Login</button>
+        <button type="button" [class.active]="mode === 'register'" (click)="setMode('register')">Register</button>
+      </div>
+    </div>
+
+    <form *ngIf="mode === 'login'" [formGroup]="loginForm" (ngSubmit)="submitLogin()" class="auth-form">
+      <label>
+        <span>Korisnicko ime ili email</span>
+        <input type="text" formControlName="identifier" placeholder="admin ili korisnik@email.com" />
+      </label>
+      <small *ngIf="hasLoginError('identifier')">Unesi korisnicko ime ili email.</small>
+
+      <label>
+        <span>Lozinka</span>
+        <input type="password" formControlName="password" placeholder="Unesi lozinku" />
+      </label>
+      <small *ngIf="hasLoginError('password')">Lozinka je obavezna.</small>
+
+      <button type="submit" [disabled]="isSubmitting">
+        {{ isSubmitting ? 'Slanje...' : 'Login' }}
+      </button>
+    </form>
+
+    <form *ngIf="mode === 'register'" [formGroup]="registerForm" (ngSubmit)="submitRegister()" class="auth-form">
+      <label>
+        <span>Korisnicko ime</span>
+        <input type="text" formControlName="username" placeholder="npr. marko89" />
+      </label>
+      <small *ngIf="hasRegisterError('username')">Korisnicko ime mora imati najmanje 3 karaktera.</small>
+
+      <label>
+        <span>Email</span>
+        <input type="email" formControlName="email" placeholder="npr. korisnik@email.com" />
+      </label>
+      <small *ngIf="hasRegisterError('email')">Unesi ispravnu email adresu.</small>
+
+      <label>
+        <span>Lozinka</span>
+        <input type="password" formControlName="password" placeholder="Minimum 8 karaktera" />
+      </label>
+      <small *ngIf="hasRegisterError('password')">Lozinka mora imati najmanje 8 karaktera.</small>
+
+      <label>
+        <span>Potvrdi lozinku</span>
+        <input type="password" formControlName="confirmPassword" placeholder="Ponovi istu lozinku" />
+      </label>
+      <small *ngIf="hasRegisterError('confirmPassword')">Potvrda lozinke je obavezna.</small>
+      <small *ngIf="hasPasswordMismatch()">Lozinke se ne poklapaju.</small>
+
+      <label>
+        <span>Uloga</span>
+        <select formControlName="role">
+          <option value="Tourist">Tourist</option>
+          <option value="Guide">Guide</option>
+        </select>
+      </label>
+
+      <button type="submit" [disabled]="isSubmitting">
+        {{ isSubmitting ? 'Slanje...' : 'Register' }}
+      </button>
+    </form>
+
+    <p class="feedback success" *ngIf="successMessage">{{ successMessage }}</p>
+    <p class="feedback error" *ngIf="errorMessage">{{ errorMessage }}</p>
+  </article>
+</section>

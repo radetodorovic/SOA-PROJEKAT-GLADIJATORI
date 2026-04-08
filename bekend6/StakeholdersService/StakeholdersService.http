@@ -1,0 +1,28 @@
+@StakeholdersService_HostAddress = http://localhost:5008
+
+GET {{StakeholdersService_HostAddress}}/api/users
+Accept: application/json
+
+###
+
+POST {{StakeholdersService_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "identifier": "admin",
+  "password": "Admin123!"
+}
+
+###
+
+POST {{StakeholdersService_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "testguide",
+  "email": "guide@example.com",
+  "password": "StrongPass123",
+  "role": "Guide"
+}
+
+###

@@ -1,0 +1,101 @@
+.users-layout {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.users-card {
+  padding: 32px;
+  border: 1px solid rgba(69, 52, 30, 0.15);
+  border-radius: 24px;
+  background: rgba(255, 250, 244, 0.9);
+  box-shadow: 0 24px 80px rgba(76, 55, 32, 0.12);
+}
+
+.users-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: start;
+  margin-bottom: 24px;
+}
+
+.section-label {
+  margin: 0 0 10px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #8b6f47;
+}
+
+h2 {
+  margin: 0 0 12px;
+  font-size: 2rem;
+}
+
+.users-header p {
+  margin-top: 0;
+  color: #4f4a45;
+}
+
+.back-link {
+  color: #7d5526;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.state {
+  margin: 0;
+  padding: 16px;
+  border-radius: 14px;
+  background: #fff7ec;
+}
+
+.state.error {
+  background: #fff0ef;
+  color: #9b2c2c;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 14px 12px;
+  border-bottom: 1px solid #e8dac8;
+  text-align: left;
+}
+
+th {
+  color: #6f5838;
+  font-size: 0.9rem;
+}
+
+.badge {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #edf8ef;
+  color: #1f6b32;
+  font-weight: 600;
+}
+
+.badge.blocked {
+  background: #fff0ef;
+  color: #9b2c2c;
+}
+
+@media (max-width: 820px) {
+  .users-card {
+    padding: 24px;
+  }
+
+  .users-header {
+    flex-direction: column;
+  }
+}
