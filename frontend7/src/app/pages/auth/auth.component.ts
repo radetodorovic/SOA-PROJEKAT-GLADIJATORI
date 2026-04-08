@@ -64,6 +64,17 @@ export class AuthComponent {
 
     this.authService.login(payload).subscribe({
       next: (response) => {
+        localStorage.setItem(
+          'currentUser',
+          JSON.stringify({
+            id: response.id,
+            username: response.username,
+            email: response.email,
+            role: response.role,
+            isBlocked: response.isBlocked
+          })
+        );
+
         this.successMessage = `${response.message} Role: ${response.role}.`;
         this.isSubmitting = false;
 

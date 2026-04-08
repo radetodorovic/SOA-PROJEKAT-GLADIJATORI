@@ -15,4 +15,16 @@ export class UsersService {
   getAll(): Observable<UserAccount[]> {
     return this.http.get<UserAccount[]>(this.usersUrl);
   }
+
+  blockUser(userId: number, adminId: number): Observable<UserAccount> {
+    return this.http.patch<UserAccount>(
+      `${this.usersUrl}/${userId}/block`,
+      {},
+      {
+        headers: {
+          'X-Admin-Id': String(adminId)
+        }
+      }
+    );
+  }
 }
