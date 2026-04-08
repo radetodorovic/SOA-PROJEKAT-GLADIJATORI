@@ -80,7 +80,10 @@ export class AuthComponent {
 
         if (response.role === 'Admin') {
           this.router.navigate(['/admin/users']);
+          return;
         }
+
+        this.router.navigate(['/my-profile']);
       },
       error: (error: HttpErrorResponse) => {
         this.errorMessage = error.error?.message ?? 'Login trenutno nije uspeo.';
