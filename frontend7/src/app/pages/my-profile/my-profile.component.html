@@ -1,0 +1,93 @@
+<section class="profile-layout" *ngIf="currentUser as user">
+  <article class="profile-card">
+    <div class="profile-header">
+      <div>
+        <p class="section-label">GLADIJATORI</p>
+        <h2>Moj profil</h2>
+        <p>Pregled osnovnih podataka za ulogovanog korisnika.</p>
+      </div>
+      <button type="button" class="logout-btn" (click)="logout()">Logout</button>
+    </div>
+
+    <p class="state success" *ngIf="infoMessage">{{ infoMessage }}</p>
+    <p class="state error" *ngIf="errorMessage">{{ errorMessage }}</p>
+
+    <div class="basic-grid">
+      <div class="basic-item">
+        <span>Username</span>
+        <strong>{{ user.username }}</strong>
+      </div>
+      <div class="basic-item">
+        <span>Email</span>
+        <strong>{{ user.email }}</strong>
+      </div>
+      <div class="basic-item">
+        <span>Uloga</span>
+        <strong>{{ user.role }}</strong>
+      </div>
+      <div class="basic-item">
+        <span>Status</span>
+        <strong>{{ user.isBlocked ? 'Blocked' : 'Active' }}</strong>
+      </div>
+    </div>
+
+    <section class="details-grid">
+      <article class="detail-box">
+        <h3>Ime</h3>
+        <p *ngIf="profile.firstName">{{ profile.firstName }}</p>
+        <button *ngIf="!profile.firstName && !showFirstNameForm" type="button" (click)="showFirstNameForm = true">
+          Dodaj ime
+        </button>
+        <div *ngIf="showFirstNameForm && !profile.firstName" class="inline-form">
+          <input [(ngModel)]="firstNameInput" type="text" placeholder="Unesi ime" />
+          <button type="button" (click)="addFirstName()">Sacuvaj</button>
+        </div>
+      </article>
+
+      <article class="detail-box">
+        <h3>Prezime</h3>
+        <p *ngIf="profile.lastName">{{ profile.lastName }}</p>
+        <button *ngIf="!profile.lastName && !showLastNameForm" type="button" (click)="showLastNameForm = true">
+          Dodaj prezime
+        </button>
+        <div *ngIf="showLastNameForm && !profile.lastName" class="inline-form">
+          <input [(ngModel)]="lastNameInput" type="text" placeholder="Unesi prezime" />
+          <button type="button" (click)="addLastName()">Sacuvaj</button>
+        </div>
+      </article>
+
+      <article class="detail-box">
+        <h3>Profilna slika</h3>
+        <img *ngIf="profile.profileImage" [src]="profile.profileImage" alt="Profilna slika korisnika" />
+        <label *ngIf="!profile.profileImage" class="file-upload">
+          Dodaj sliku
+          <input type="file" accept="image/*" (change)="onImageSelected($event)" />
+        </label>
+      </article>
+
+      <article class="detail-box wide">
+        <h3>Biografija</h3>
+        <p *ngIf="profile.biography">{{ profile.biography }}</p>
+        <button *ngIf="!profile.biography && !showBiographyForm" type="button" (click)="showBiographyForm = true">
+          Dodaj biografiju
+        </button>
+        <div *ngIf="showBiographyForm && !profile.biography" class="inline-form">
+          <textarea [(ngModel)]="biographyInput" rows="3" placeholder="Unesi kratku biografiju"></textarea>
+          <button type="button" (click)="addBiography()">Sacuvaj</button>
+        </div>
+      </article>
+
+      <article class="detail-box wide">
+        <h3>Moto (citat)</h3>
+        <p *ngIf="profile.motto">{{ profile.motto }}</p>
+        <button *ngIf="!profile.motto && !showMottoForm" type="button" (click)="showMottoForm = true">
+          Dodaj moto
+        </button>
+        <div *ngIf="showMottoForm && !profile.motto" class="inline-form">
+          <textarea [(ngModel)]="mottoInput" rows="2" placeholder="Unesi moto"></textarea>
+          <button type="button" (click)="addMotto()">Sacuvaj</button>
+        </div>
+      </article>
+    </section>
+  </article>
+</section>

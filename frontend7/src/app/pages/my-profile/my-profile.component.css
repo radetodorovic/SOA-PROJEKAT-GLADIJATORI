@@ -1,0 +1,173 @@
+.profile-layout {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.profile-card {
+  padding: 32px;
+  border: 1px solid rgba(69, 52, 30, 0.15);
+  border-radius: 24px;
+  background: rgba(255, 250, 244, 0.9);
+  box-shadow: 0 24px 80px rgba(76, 55, 32, 0.12);
+}
+
+.profile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.section-label {
+  margin: 0 0 10px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #8b6f47;
+}
+
+h2 {
+  margin: 0 0 10px;
+  font-size: 2rem;
+}
+
+h3 {
+  margin: 0 0 8px;
+}
+
+.profile-header p {
+  margin: 0;
+  color: #4f4a45;
+}
+
+.logout-btn {
+  border: 1px solid #b78a52;
+  background: #fffaf2;
+  color: #7d5526;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.state {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+}
+
+.state.error {
+  background: #fff0ef;
+  color: #9b2c2c;
+}
+
+.state.success {
+  background: #edf8ef;
+  color: #1f6b32;
+}
+
+.basic-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.basic-item {
+  padding: 12px;
+  border: 1px solid #e8dac8;
+  border-radius: 12px;
+  background: #fffdf9;
+}
+
+.basic-item span {
+  display: block;
+  font-size: 12px;
+  color: #8b6f47;
+  margin-bottom: 4px;
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.detail-box {
+  padding: 14px;
+  border: 1px solid #e8dac8;
+  border-radius: 12px;
+  background: #fffdf9;
+}
+
+.detail-box.wide {
+  grid-column: 1 / -1;
+}
+
+.detail-box p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.detail-box img {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #d6c1a1;
+}
+
+.inline-form {
+  display: grid;
+  gap: 10px;
+}
+
+input,
+textarea,
+button {
+  font: inherit;
+}
+
+input,
+textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cab79b;
+  border-radius: 10px;
+  background: #fffdfa;
+}
+
+button,
+.file-upload {
+  border: 1px solid #b78a52;
+  background: #fffaf2;
+  color: #7d5526;
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.file-upload {
+  display: inline-block;
+}
+
+.file-upload input {
+  display: none;
+}
+
+@media (max-width: 820px) {
+  .profile-card {
+    padding: 24px;
+  }
+
+  .profile-header {
+    flex-direction: column;
+  }
+
+  .basic-grid,
+  .details-grid {
+    grid-template-columns: 1fr;
+  }
+}
