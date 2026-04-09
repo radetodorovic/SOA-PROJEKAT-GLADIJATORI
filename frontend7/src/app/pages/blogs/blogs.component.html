@@ -1,0 +1,63 @@
+<section class="blogs-layout">
+  <article class="blogs-card">
+    <div class="blogs-header">
+      <div>
+        <p class="section-label">GLADIJATORI</p>
+        <h2>Blogovi</h2>
+        <p>Kreiranje i pregled blogova sa markdown opisom.</p>
+      </div>
+      <button type="button" [disabled]="isLoadingBlogs" (click)="loadBlogs()">Osvezi listu</button>
+    </div>
+
+    <p class="state success" *ngIf="infoMessage">{{ infoMessage }}</p>
+    <p class="state error" *ngIf="errorMessage">{{ errorMessage }}</p>
+
+    <section class="box">
+      <h3>Novi blog</h3>
+      <label>
+        Title
+        <input [(ngModel)]="titleInput" type="text" maxlength="200" placeholder="Naslov bloga" />
+      </label>
+      <label>
+        Description (markdown)
+        <textarea
+          [(ngModel)]="descriptionInput"
+          rows="6"
+          placeholder="Npr. ## Podnaslov&#10;- Stavka 1&#10;- Stavka 2"></textarea>
+      </label>
+      <label>
+        Slike (opciono)
+        <label class="file-upload">
+          Dodaj slike
+          <input type="file" accept="image/*" multiple (change)="onImagesSelected($event)" />
+        </label>
+      </label>
+      <div class="selected-images" *ngIf="selectedImages.length > 0">
+        <article class="selected-image" *ngFor="let image of selectedImages; let index = index">
+          <img [src]="image" alt="Nova slika bloga" />
+          <button type="button" class="remove-image-btn" (click)="removeSelectedImage(index)">Ukloni</button>
+        </article>
+      </div>
+      <div class="actions">
+        <button type="button" [disabled]="isSavingBlog" (click)="createBlog()">
+          {{ isSavingBlog ? 'Objavljivanje...' : 'Objavi blog' }}
+        </button>
+      </div>
+    </section>
+
+    <section class="box">
+      <h3>Svi blogovi</h3>
+      <p *ngIf="isLoadingBlogs">Ucitavanje blogova...</p>
+      <p *ngIf="!isLoadingBlogs && blogs.length === 0">Trenutno nema blogova.</p>
+
+      <div class="blog-list" *ngIf="!isLoadingBlogs && blogs.length > 0">
+        <article class="blog-item" *ngFor="let blog of blogs">
+          <h4>{{ blog.title }}</h4>
+          <p class="meta">Autor #{{ blog.authorId }} | {{ formatDate(blog.createdAtUtc) }}</p>
+          <p class="preview">{{ blog.description }}</p>
+          <button type="button" (click)="openBlog(blog.id)">Prikazi detalje</button>
+        </article>
+      </div>
+    </section>
+  </article>
+</section>

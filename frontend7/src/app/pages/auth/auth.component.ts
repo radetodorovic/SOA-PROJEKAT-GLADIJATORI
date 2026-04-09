@@ -77,13 +77,7 @@ export class AuthComponent {
 
         this.successMessage = `${response.message} Uloga: ${this.getRoleLabel(response.role)}.`;
         this.isSubmitting = false;
-
-        if (response.role === 'Admin') {
-          this.router.navigate(['/admin/users']);
-          return;
-        }
-
-        this.router.navigate(['/my-profile']);
+        this.router.navigate(['/home']);
       },
       error: (error: HttpErrorResponse) => {
         this.errorMessage = error.error?.message ?? 'Login trenutno nije uspeo.';

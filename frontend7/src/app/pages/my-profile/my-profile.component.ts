@@ -39,6 +39,15 @@ export class MyProfileComponent implements OnInit {
   isProfileInitialized = false;
   isLoadingProfile = true;
   isSavingProfile = false;
+  isEditMode = false;
+
+  editProfile: ProfileDetails = {
+    firstName: '',
+    lastName: '',
+    profileImage: '',
+    biography: '',
+    motto: ''
+  };
 
   firstNameInput = '';
   lastNameInput = '';
@@ -179,6 +188,89 @@ export class MyProfileComponent implements OnInit {
     reader.readAsDataURL(file);
   }
 
+  onEditImageSelected(event: Event): void {
+    if (!this.isEditMode) {
+      return;
+    }
+
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      this.errorMessage = 'Moras izabrati sliku.';
+      this.infoMessage = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result !== 'string') {
+        this.errorMessage = 'Neuspesno ucitavanje slike.';
+        this.infoMessage = '';
+        return;
+      }
+
+      this.editProfile.profileImage = result;
+    };
+
+    reader.readAsDataURL(file);
+  }
+
+  startEditing(): void {
+    if (!this.isProfileInitialized || this.isLoadingProfile || this.isSavingProfile) {
+      return;
+    }
+
+    this.editProfile = { ...this.profile };
+    this.isEditMode = true;
+    this.errorMessage = '';
+    this.infoMessage = '';
+  }
+
+  cancelEditing(): void {
+    if (!this.isEditMode || this.isSavingProfile) {
+      return;
+    }
+
+    this.editProfile = { ...this.profile };
+    this.isEditMode = false;
+    this.errorMessage = '';
+    this.infoMessage = '';
+  }
+
+  saveEditedProfile(): void {
+    if (!this.currentUser || !this.isEditMode || this.isSavingProfile) {
+      return;
+    }
+
+    const payload = this.normalizeProfile(this.editProfile);
+    if (!this.isProfileCompleteFor(payload)) {
+      this.errorMessage = 'Sva polja profila su obavezna.';
+      this.infoMessage = '';
+      return;
+    }
+
+    this.isSavingProfile = true;
+    this.usersService.updateMyProfile(this.currentUser.id, payload).subscribe({
+      next: (response) => {
+        this.applyProfile(response);
+        this.isEditMode = false;
+        this.infoMessage = 'Profil je uspesno izmenjen.';
+        this.errorMessage = '';
+        this.isSavingProfile = false;
+      },
+      error: (error: HttpErrorResponse) => {
+        this.errorMessage = error.error?.message ?? 'Neuspesna izmena profila.';
+        this.infoMessage = '';
+        this.isSavingProfile = false;
+      }
+    });
+  }
+
   logout(): void {
     localStorage.removeItem('currentUser');
     this.router.navigate(['/auth']);
@@ -265,11 +357,25 @@ export class MyProfileComponent implements OnInit {
   }
 
   private isProfileComplete(): boolean {
-    return !!this.profile.firstName &&
-      !!this.profile.lastName &&
-      !!this.profile.profileImage &&
-      !!this.profile.biography &&
-      !!this.profile.motto;
+    return this.isProfileCompleteFor(this.profile);
+  }
+
+  private isProfileCompleteFor(profile: ProfileDetails): boolean {
+    return !!profile.firstName &&
+      !!profile.lastName &&
+      !!profile.profileImage &&
+      !!profile.biography &&
+      !!profile.motto;
+  }
+
+  private normalizeProfile(profile: ProfileDetails): ProfileDetails {
+    return {
+      firstName: profile.firstName.trim(),
+      lastName: profile.lastName.trim(),
+      profileImage: profile.profileImage.trim(),
+      biography: profile.biography.trim(),
+      motto: profile.motto.trim()
+    };
   }
 
   private applyProfile(profile: UserProfile): void {
@@ -280,6 +386,7 @@ export class MyProfileComponent implements OnInit {
       biography: profile.biography ?? '',
       motto: profile.motto ?? ''
     };
+    this.editProfile = { ...this.profile };
     this.isProfileInitialized = profile.isProfileInitialized;
 
     if (this.isProfileInitialized) {
