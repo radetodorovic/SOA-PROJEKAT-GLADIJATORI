@@ -8,13 +8,19 @@ import { AppComponent } from './app.component';
 import { AuthComponent } from './pages/auth/auth.component';
 import { AdminUsersComponent } from './pages/admin-users/admin-users.component';
 import { MyProfileComponent } from './pages/my-profile/my-profile.component';
+import { HomeComponent } from './pages/home/home.component';
+import { BlogsComponent } from './pages/blogs/blogs.component';
+import { BlogDetailsComponent } from './pages/blog-details/blog-details.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     AuthComponent,
     AdminUsersComponent,
-    MyProfileComponent
+    MyProfileComponent,
+    HomeComponent,
+    BlogsComponent,
+    BlogDetailsComponent
   ],
   imports: [
     BrowserModule,

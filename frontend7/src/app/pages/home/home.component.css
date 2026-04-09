@@ -1,0 +1,30 @@
+.home-layout {
+  max-width: 960px;
+  margin: 0 auto;
+  min-height: 60vh;
+  display: grid;
+  place-items: center;
+}
+
+.home-content {
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+}
+
+h2 {
+  margin: 0;
+  font-size: clamp(2rem, 7vw, 4.5rem);
+  letter-spacing: 0.08em;
+  color: #4c3720;
+}
+
+a {
+  text-decoration: none;
+  border: 1px solid #b78a52;
+  background: #fffaf2;
+  color: #7d5526;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-weight: 600;
+}

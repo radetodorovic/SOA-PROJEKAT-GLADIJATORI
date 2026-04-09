@@ -1,0 +1,34 @@
+<section class="details-layout">
+  <article class="details-card" *ngIf="!isLoading; else loadingBlog">
+    <div class="details-header">
+      <button type="button" routerLink="/blogs">Nazad na blogove</button>
+      <p class="section-label">GLADIJATORI</p>
+    </div>
+
+    <p class="state error" *ngIf="errorMessage">{{ errorMessage }}</p>
+
+    <ng-container *ngIf="blog as item">
+      <h2>{{ item.title }}</h2>
+      <p class="meta">Autor #{{ item.authorId }} | {{ formatDate(item.createdAtUtc) }}</p>
+      <p class="format">Format opisa: {{ item.descriptionFormat }}</p>
+
+      <section class="content-box">
+        <h3>Opis bloga</h3>
+        <p class="description">{{ item.description }}</p>
+      </section>
+
+      <section class="content-box" *ngIf="item.images.length > 0">
+        <h3>Slike</h3>
+        <div class="images">
+          <img *ngFor="let image of item.images" [src]="image" alt="Slika bloga" />
+        </div>
+      </section>
+    </ng-container>
+  </article>
+
+  <ng-template #loadingBlog>
+    <article class="details-card">
+      <p>Ucitavanje bloga...</p>
+    </article>
+  </ng-template>
+</section>

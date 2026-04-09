@@ -26,3 +26,37 @@ Content-Type: application/json
 }
 
 ###
+
+GET {{StakeholdersService_HostAddress}}/api/users/2/profile
+X-User-Id: 2
+Accept: application/json
+
+###
+
+POST {{StakeholdersService_HostAddress}}/api/users/2/profile-initialization
+X-User-Id: 2
+Content-Type: application/json
+
+{
+  "firstName": "Marko",
+  "lastName": "Markovic",
+  "profileImage": "https://example.com/profile.jpg",
+  "biography": "Vodic kroz gradske i planinske ture.",
+  "motto": "Svaka tura krije novu pricu."
+}
+
+###
+
+PUT {{StakeholdersService_HostAddress}}/api/users/2/profile
+X-User-Id: 2
+Content-Type: application/json
+
+{
+  "firstName": "Marko",
+  "lastName": "Markovic",
+  "profileImage": "https://example.com/profile-updated.jpg",
+  "biography": "Vodic sa fokusom na autenticna lokalna iskustva.",
+  "motto": "Najbolje uspomene nastaju u pokretu."
+}
+
+###

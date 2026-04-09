@@ -7,6 +7,11 @@ public interface IUserService
     Task<IReadOnlyCollection<UserResponseDto>> GetAllUsersAsync(CancellationToken cancellationToken = default);
     Task<ServiceResult<UserResponseDto>> BlockUserAsync(int adminId, int userId, CancellationToken cancellationToken = default);
     Task<ServiceResult<UserProfileResponseDto>> GetMyProfileAsync(int requesterId, int userId, CancellationToken cancellationToken = default);
+    Task<ServiceResult<UserProfileResponseDto>> UpdateMyProfileAsync(
+        int requesterId,
+        int userId,
+        UpdateUserProfileDto request,
+        CancellationToken cancellationToken = default);
     Task<ServiceResult<UserProfileResponseDto>> InitializeMyProfileAsync(
         int requesterId,
         int userId,

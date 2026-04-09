@@ -6,7 +6,25 @@
         <h2>Moj profil</h2>
         <p>Pregled osnovnih podataka za ulogovanog korisnika.</p>
       </div>
-      <button type="button" class="logout-btn" (click)="logout()">Odjava</button>
+      <div class="header-actions">
+        <button
+          *ngIf="isProfileInitialized && !isEditMode"
+          type="button"
+          class="edit-btn"
+          [disabled]="isSavingProfile"
+          (click)="startEditing()">
+          Izmeni profil
+        </button>
+        <button
+          *ngIf="isEditMode"
+          type="button"
+          class="secondary-btn"
+          [disabled]="isSavingProfile"
+          (click)="cancelEditing()">
+          Odustani od izmene
+        </button>
+        <button type="button" class="logout-btn" (click)="logout()">Odjava</button>
+      </div>
     </div>
 
     <p class="state success" *ngIf="infoMessage">{{ infoMessage }}</p>
@@ -27,7 +45,7 @@
       </div>
     </div>
 
-    <section class="details-grid">
+    <section class="details-grid" *ngIf="!isEditMode; else editModeForm">
       <article class="detail-box">
         <h3>Ime</h3>
         <p *ngIf="profile.firstName">{{ profile.firstName }}</p>
@@ -85,6 +103,45 @@
         </div>
       </article>
     </section>
+
+    <ng-template #editModeForm>
+      <section class="details-grid">
+        <article class="detail-box">
+          <h3>Ime</h3>
+          <input [(ngModel)]="editProfile.firstName" type="text" placeholder="Unesi ime" />
+        </article>
+
+        <article class="detail-box">
+          <h3>Prezime</h3>
+          <input [(ngModel)]="editProfile.lastName" type="text" placeholder="Unesi prezime" />
+        </article>
+
+        <article class="detail-box">
+          <h3>Profilna slika</h3>
+          <img *ngIf="editProfile.profileImage" [src]="editProfile.profileImage" alt="Profilna slika korisnika" />
+          <label class="file-upload">
+            Promeni sliku
+            <input type="file" accept="image/*" (change)="onEditImageSelected($event)" />
+          </label>
+        </article>
+
+        <article class="detail-box wide">
+          <h3>Biografija</h3>
+          <textarea [(ngModel)]="editProfile.biography" rows="3" placeholder="Unesi kratku biografiju"></textarea>
+        </article>
+
+        <article class="detail-box wide">
+          <h3>Moto (citat)</h3>
+          <textarea [(ngModel)]="editProfile.motto" rows="2" placeholder="Unesi moto"></textarea>
+        </article>
+      </section>
+
+      <div class="edit-actions">
+        <button type="button" [disabled]="isSavingProfile" (click)="saveEditedProfile()">
+          {{ isSavingProfile ? 'Cuvanje...' : 'Sacuvaj izmene' }}
+        </button>
+      </div>
+    </ng-template>
   </article>
 
   <ng-template #loadingProfile>

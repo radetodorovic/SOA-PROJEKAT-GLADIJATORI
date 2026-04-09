@@ -1,13 +1,30 @@
 <div class="app-shell">
-  <header class="app-header">
-    <div>
-      
-      <h1>GLADIJATORI</h1>
-      
-    </div>
+  <header class="top-nav" *ngIf="currentUser && !isAuthRoute">
+    <nav class="nav-content">
+      <a class="brand" routerLink="/home" [routerLinkActiveOptions]="{ exact: true }" routerLinkActive="active">
+        GLADIJATORI
+      </a>
+
+      <div class="nav-links">
+        <a routerLink="/home" [routerLinkActiveOptions]="{ exact: true }" routerLinkActive="active">
+          Home
+        </a>
+        <a routerLink="/blogs" routerLinkActive="active">
+          Blogovi
+        </a>
+        <a *ngIf="!isAdmin()" routerLink="/my-profile" routerLinkActive="active">
+          Moj profil
+        </a>
+        <a *ngIf="isAdmin()" routerLink="/admin/users" routerLinkActive="active">
+          Korisnici
+        </a>
+      </div>
+
+      <button type="button" class="logout-btn" (click)="logout()">Odjava</button>
+    </nav>
   </header>
 
-  <main>
+  <main class="app-main">
     <router-outlet></router-outlet>
   </main>
 </div>

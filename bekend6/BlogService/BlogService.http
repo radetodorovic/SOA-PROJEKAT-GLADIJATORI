@@ -1,0 +1,21 @@
+@BlogService_HostAddress = http://localhost:5009
+
+GET {{BlogService_HostAddress}}/api/blogs
+Accept: application/json
+
+###
+
+POST {{BlogService_HostAddress}}/api/blogs
+X-User-Id: 2
+Content-Type: application/json
+
+{
+  "title": "Planinska avantura na Tari",
+  "description": "# Tari se vracam opet\n\nOvo je **markdown** opis bloga sa listom:\n- vidikovac\n- staza\n- jezero",
+  "images": [
+    "https://example.com/tara-1.jpg",
+    "https://example.com/tara-2.jpg"
+  ]
+}
+
+###

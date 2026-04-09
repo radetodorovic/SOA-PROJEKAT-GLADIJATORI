@@ -41,14 +41,11 @@ h3 {
   color: #4f4a45;
 }
 
-.logout-btn {
-  border: 1px solid #b78a52;
-  background: #fffaf2;
-  color: #7d5526;
-  border-radius: 10px;
-  padding: 10px 14px;
-  font-weight: 600;
-  cursor: pointer;
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .state {
@@ -155,6 +152,17 @@ button,
 
 .file-upload input {
   display: none;
+}
+
+.edit-actions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 @media (max-width: 820px) {

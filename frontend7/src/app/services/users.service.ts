@@ -45,4 +45,12 @@ export class UsersService {
       }
     });
   }
+
+  updateMyProfile(userId: number, payload: InitializeUserProfileRequest): Observable<UserProfile> {
+    return this.http.put<UserProfile>(`${this.usersUrl}/${userId}/profile`, payload, {
+      headers: {
+        'X-User-Id': String(userId)
+      }
+    });
+  }
 }
