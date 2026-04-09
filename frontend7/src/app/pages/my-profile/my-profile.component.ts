@@ -1,5 +1,8 @@
 import { Component, OnInit } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { UsersService } from '../../services/users.service';
+import { UserProfile } from '../../models/user-profile';
 
 type AppRole = 'Admin' | 'Guide' | 'Tourist';
 
@@ -12,11 +15,11 @@ interface CurrentUser {
 }
 
 interface ProfileDetails {
-  firstName: string | null;
-  lastName: string | null;
-  profileImage: string | null;
-  biography: string | null;
-  motto: string | null;
+  firstName: string;
+  lastName: string;
+  profileImage: string;
+  biography: string;
+  motto: string;
 }
 
 @Component({
@@ -27,12 +30,15 @@ interface ProfileDetails {
 export class MyProfileComponent implements OnInit {
   currentUser: CurrentUser | null = null;
   profile: ProfileDetails = {
-    firstName: null,
-    lastName: null,
-    profileImage: null,
-    biography: null,
-    motto: null
+    firstName: '',
+    lastName: '',
+    profileImage: '',
+    biography: '',
+    motto: ''
   };
+  isProfileInitialized = false;
+  isLoadingProfile = true;
+  isSavingProfile = false;
 
   firstNameInput = '';
   lastNameInput = '';
@@ -47,7 +53,10 @@ export class MyProfileComponent implements OnInit {
   errorMessage = '';
   infoMessage = '';
 
-  constructor(private readonly router: Router) {}
+  constructor(
+    private readonly router: Router,
+    private readonly usersService: UsersService
+  ) {}
 
   ngOnInit(): void {
     const user = this.readCurrentUser();
@@ -62,11 +71,11 @@ export class MyProfileComponent implements OnInit {
     }
 
     this.currentUser = user;
-    this.profile = this.readProfile(user.id);
+    this.loadProfile(user.id);
   }
 
   addFirstName(): void {
-    if (!this.currentUser || this.profile.firstName) {
+    if (!this.currentUser || this.profile.firstName || this.isProfileInitialized) {
       return;
     }
 
@@ -80,11 +89,11 @@ export class MyProfileComponent implements OnInit {
     this.profile.firstName = value;
     this.firstNameInput = '';
     this.showFirstNameForm = false;
-    this.saveAndNotify('Ime je uspesno sacuvano.');
+    this.tryInitializeProfile('Ime je uneto. Profil ce biti sacuvan kada popunis sva polja.');
   }
 
   addLastName(): void {
-    if (!this.currentUser || this.profile.lastName) {
+    if (!this.currentUser || this.profile.lastName || this.isProfileInitialized) {
       return;
     }
 
@@ -98,11 +107,11 @@ export class MyProfileComponent implements OnInit {
     this.profile.lastName = value;
     this.lastNameInput = '';
     this.showLastNameForm = false;
-    this.saveAndNotify('Prezime je uspesno sacuvano.');
+    this.tryInitializeProfile('Prezime je uneto. Profil ce biti sacuvan kada popunis sva polja.');
   }
 
   addBiography(): void {
-    if (!this.currentUser || this.profile.biography) {
+    if (!this.currentUser || this.profile.biography || this.isProfileInitialized) {
       return;
     }
 
@@ -116,11 +125,11 @@ export class MyProfileComponent implements OnInit {
     this.profile.biography = value;
     this.biographyInput = '';
     this.showBiographyForm = false;
-    this.saveAndNotify('Biografija je uspesno sacuvana.');
+    this.tryInitializeProfile('Biografija je uneta. Profil ce biti sacuvan kada popunis sva polja.');
   }
 
   addMotto(): void {
-    if (!this.currentUser || this.profile.motto) {
+    if (!this.currentUser || this.profile.motto || this.isProfileInitialized) {
       return;
     }
 
@@ -134,11 +143,11 @@ export class MyProfileComponent implements OnInit {
     this.profile.motto = value;
     this.mottoInput = '';
     this.showMottoForm = false;
-    this.saveAndNotify('Moto je uspesno sacuvan.');
+    this.tryInitializeProfile('Moto je unet. Profil ce biti sacuvan kada popunis sva polja.');
   }
 
   onImageSelected(event: Event): void {
-    if (!this.currentUser || this.profile.profileImage) {
+    if (!this.currentUser || this.profile.profileImage || this.isProfileInitialized) {
       return;
     }
 
@@ -164,7 +173,7 @@ export class MyProfileComponent implements OnInit {
       }
 
       this.profile.profileImage = result;
-      this.saveAndNotify('Profilna slika je uspesno sacuvana.');
+      this.tryInitializeProfile('Profilna slika je uneta. Profil ce biti sacuvan kada popunis sva polja.');
     };
 
     reader.readAsDataURL(file);
@@ -175,14 +184,66 @@ export class MyProfileComponent implements OnInit {
     this.router.navigate(['/auth']);
   }
 
-  private saveAndNotify(message: string): void {
-    if (!this.currentUser) {
+  getRoleLabel(role: AppRole): string {
+    switch (role) {
+      case 'Admin':
+        return 'Administrator';
+      case 'Guide':
+        return 'Vodic';
+      case 'Tourist':
+        return 'Turista';
+      default:
+        return role;
+    }
+  }
+
+  private loadProfile(userId: number): void {
+    this.isLoadingProfile = true;
+    this.usersService.getMyProfile(userId).subscribe({
+      next: (profile) => {
+        this.applyProfile(profile);
+        this.errorMessage = '';
+        this.infoMessage = '';
+        this.isLoadingProfile = false;
+      },
+      error: (error: HttpErrorResponse) => {
+        this.errorMessage = error.error?.message ?? 'Neuspesno ucitavanje profila.';
+        this.infoMessage = '';
+        this.isLoadingProfile = false;
+      }
+    });
+  }
+
+  private tryInitializeProfile(partialMessage: string): void {
+    if (!this.currentUser || this.isSavingProfile) {
       return;
     }
 
-    localStorage.setItem(this.profileKey(this.currentUser.id), JSON.stringify(this.profile));
     this.errorMessage = '';
-    this.infoMessage = message;
+
+    if (!this.isProfileComplete()) {
+      this.infoMessage = partialMessage;
+      return;
+    }
+
+    this.isSavingProfile = true;
+    this.usersService.initializeMyProfile(this.currentUser.id, this.profile).subscribe({
+      next: (response) => {
+        this.applyProfile(response);
+        this.infoMessage = 'Profil je uspesno sacuvan u bazi.';
+        this.errorMessage = '';
+        this.isSavingProfile = false;
+      },
+      error: (error: HttpErrorResponse) => {
+        this.errorMessage = error.error?.message ?? 'Neuspesno cuvanje profila.';
+        this.infoMessage = '';
+        this.isSavingProfile = false;
+
+        if (error.status === 409) {
+          this.loadProfile(this.currentUser!.id);
+        }
+      }
+    });
   }
 
   private readCurrentUser(): CurrentUser | null {
@@ -203,39 +264,29 @@ export class MyProfileComponent implements OnInit {
     }
   }
 
-  private readProfile(userId: number): ProfileDetails {
-    const raw = localStorage.getItem(this.profileKey(userId));
-    if (!raw) {
-      return {
-        firstName: null,
-        lastName: null,
-        profileImage: null,
-        biography: null,
-        motto: null
-      };
-    }
-
-    try {
-      const parsed = JSON.parse(raw) as ProfileDetails;
-      return {
-        firstName: parsed.firstName ?? null,
-        lastName: parsed.lastName ?? null,
-        profileImage: parsed.profileImage ?? null,
-        biography: parsed.biography ?? null,
-        motto: parsed.motto ?? null
-      };
-    } catch {
-      return {
-        firstName: null,
-        lastName: null,
-        profileImage: null,
-        biography: null,
-        motto: null
-      };
-    }
+  private isProfileComplete(): boolean {
+    return !!this.profile.firstName &&
+      !!this.profile.lastName &&
+      !!this.profile.profileImage &&
+      !!this.profile.biography &&
+      !!this.profile.motto;
   }
 
-  private profileKey(userId: number): string {
-    return `profile-details:${userId}`;
+  private applyProfile(profile: UserProfile): void {
+    this.profile = {
+      firstName: profile.firstName ?? '',
+      lastName: profile.lastName ?? '',
+      profileImage: profile.profileImage ?? '',
+      biography: profile.biography ?? '',
+      motto: profile.motto ?? ''
+    };
+    this.isProfileInitialized = profile.isProfileInitialized;
+
+    if (this.isProfileInitialized) {
+      this.showFirstNameForm = false;
+      this.showLastNameForm = false;
+      this.showBiographyForm = false;
+      this.showMottoForm = false;
+    }
   }
 }

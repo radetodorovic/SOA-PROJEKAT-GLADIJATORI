@@ -39,4 +39,53 @@ public class UsersController(IUserService userService) : ControllerBase
 
         return StatusCode(result.StatusCode, result.Data);
     }
+
+    [HttpGet("{id:int}/profile")]
+    [ProducesResponseType(typeof(UserProfileResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetMyProfile(
+        int id,
+        [FromHeader(Name = "X-User-Id")] int userId,
+        CancellationToken cancellationToken)
+    {
+        var result = await userService.GetMyProfileAsync(userId, id, cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            return StatusCode(result.StatusCode, new ErrorResponseDto
+            {
+                Message = result.Message
+            });
+        }
+
+        return StatusCode(result.StatusCode, result.Data);
+    }
+
+    [HttpPost("{id:int}/profile-initialization")]
+    [ProducesResponseType(typeof(UserProfileResponseDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> InitializeMyProfile(
+        int id,
+        [FromHeader(Name = "X-User-Id")] int userId,
+        [FromBody] InitializeUserProfileDto request,
+        CancellationToken cancellationToken)
+    {
+        var result = await userService.InitializeMyProfileAsync(userId, id, request, cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            return StatusCode(result.StatusCode, new ErrorResponseDto
+            {
+                Message = result.Message
+            });
+        }
+
+        return StatusCode(result.StatusCode, result.Data);
+    }
 }

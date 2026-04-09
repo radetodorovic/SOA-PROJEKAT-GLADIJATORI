@@ -6,7 +6,7 @@
         <h2>Svi korisnicki nalozi</h2>
         <p>Pregled svih naloga iz sistema bez prikaza lozinki.</p>
       </div>
-      <a routerLink="/" class="back-link">Nazad na auth</a>
+      <a routerLink="/" class="back-link">Nazad na prijavu</a>
     </div>
 
     <p class="state" *ngIf="isLoading">Ucitavanje korisnika...</p>
@@ -18,11 +18,11 @@
         <thead>
           <tr>
             <th>ID</th>
-            <th>Username</th>
+            <th>Korisnicko ime</th>
             <th>Email</th>
-            <th>Role</th>
+            <th>Uloga</th>
             <th>Status</th>
-            <th>Action</th>
+            <th>Akcija</th>
           </tr>
         </thead>
         <tbody>
@@ -30,10 +30,10 @@
             <td>{{ user.id }}</td>
             <td>{{ user.username }}</td>
             <td>{{ user.email }}</td>
-            <td>{{ user.role }}</td>
+            <td>{{ getRoleLabel(user.role) }}</td>
             <td>
               <span class="badge" [class.blocked]="user.isBlocked">
-                {{ user.isBlocked ? 'Blocked' : 'Active' }}
+                {{ user.isBlocked ? 'Blokiran' : 'Aktivan' }}
               </span>
             </td>
             <td>
@@ -42,7 +42,7 @@
                 class="action-btn"
                 (click)="blockUser(user)"
                 [disabled]="user.role === 'Admin' || user.isBlocked || isBlocking(user.id) || currentAdminId === null">
-                {{ user.isBlocked ? 'Blocked' : (isBlocking(user.id) ? 'Blocking...' : 'Block') }}
+                {{ user.isBlocked ? 'Blokiran' : (isBlocking(user.id) ? 'Blokiranje...' : 'Blokiraj') }}
               </button>
             </td>
           </tr>

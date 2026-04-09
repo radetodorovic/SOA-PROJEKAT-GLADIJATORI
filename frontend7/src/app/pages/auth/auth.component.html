@@ -5,12 +5,12 @@
       <h2>Pristup nalogu</h2>
       <p>
         Izaberi da li zelis da se prijavis na postojeci nalog ili da napravis novi nalog
-        kao <strong>Guide</strong> ili <strong>Tourist</strong>.
+        kao <strong>Vodic</strong> ili <strong>Turista</strong>.
       </p>
 
       <div class="mode-switch">
-        <button type="button" [class.active]="mode === 'login'" (click)="setMode('login')">Login</button>
-        <button type="button" [class.active]="mode === 'register'" (click)="setMode('register')">Register</button>
+        <button type="button" [class.active]="mode === 'login'" (click)="setMode('login')">Prijava</button>
+        <button type="button" [class.active]="mode === 'register'" (click)="setMode('register')">Registracija</button>
       </div>
     </div>
 
@@ -28,7 +28,7 @@
       <small *ngIf="hasLoginError('password')">Lozinka je obavezna.</small>
 
       <button type="submit" [disabled]="isSubmitting">
-        {{ isSubmitting ? 'Slanje...' : 'Login' }}
+        {{ isSubmitting ? 'Slanje...' : 'Prijavi se' }}
       </button>
     </form>
 
@@ -61,13 +61,13 @@
       <label>
         <span>Uloga</span>
         <select formControlName="role">
-          <option value="Tourist">Tourist</option>
-          <option value="Guide">Guide</option>
+          <option value="Tourist">Turista</option>
+          <option value="Guide">Vodic</option>
         </select>
       </label>
 
       <button type="submit" [disabled]="isSubmitting">
-        {{ isSubmitting ? 'Slanje...' : 'Register' }}
+        {{ isSubmitting ? 'Slanje...' : 'Registruj se' }}
       </button>
     </form>
 

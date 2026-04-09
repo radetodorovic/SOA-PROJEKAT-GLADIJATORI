@@ -19,35 +19,35 @@ public class AuthService(IUserRepository userRepository) : IAuthService
             string.IsNullOrWhiteSpace(roleRaw))
         {
             return ServiceResult<RegisteredUserDto>.Failure(
-                "Username, email, password and role are required.",
+                "Korisnicko ime, email, lozinka i uloga su obavezni.",
                 StatusCodes.Status400BadRequest);
         }
 
         if (password.Length < 8)
         {
             return ServiceResult<RegisteredUserDto>.Failure(
-                "Password must contain at least 8 characters.",
+                "Lozinka mora da sadrzi najmanje 8 karaktera.",
                 StatusCodes.Status400BadRequest);
         }
 
         if (!Enum.TryParse<UserRole>(roleRaw, true, out var role) || role == UserRole.Admin)
         {
             return ServiceResult<RegisteredUserDto>.Failure(
-                "Only Guide and Tourist roles are allowed during registration.",
+                "Tokom registracije su dozvoljene samo uloge Vodic i Turista.",
                 StatusCodes.Status400BadRequest);
         }
 
         if (await userRepository.GetByEmailAsync(email, cancellationToken) is not null)
         {
             return ServiceResult<RegisteredUserDto>.Failure(
-                "An account with this email already exists.",
+                "Nalog sa ovim email-om vec postoji.",
                 StatusCodes.Status409Conflict);
         }
 
         if (await userRepository.GetByUsernameAsync(username, cancellationToken) is not null)
         {
             return ServiceResult<RegisteredUserDto>.Failure(
-                "This username is already taken.",
+                "Ovo korisnicko ime je vec zauzeto.",
                 StatusCodes.Status409Conflict);
         }
 
@@ -72,7 +72,7 @@ public class AuthService(IUserRepository userRepository) : IAuthService
                 IsBlocked = savedUser.IsBlocked
             },
             StatusCodes.Status201Created,
-            "User registered successfully.");
+            "Korisnik je uspesno registrovan.");
     }
 
     public async Task<ServiceResult<LoginResponseDto>> LoginAsync(LoginUserDto request, CancellationToken cancellationToken = default)
@@ -83,7 +83,7 @@ public class AuthService(IUserRepository userRepository) : IAuthService
         if (string.IsNullOrWhiteSpace(identifier) || string.IsNullOrWhiteSpace(password))
         {
             return ServiceResult<LoginResponseDto>.Failure(
-                "Username/email and password are required.",
+                "Korisnicko ime/email i lozinka su obavezni.",
                 StatusCodes.Status400BadRequest);
         }
 
@@ -91,14 +91,14 @@ public class AuthService(IUserRepository userRepository) : IAuthService
         if (user is null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
         {
             return ServiceResult<LoginResponseDto>.Failure(
-                "Invalid credentials.",
+                "Neispravni kredencijali.",
                 StatusCodes.Status401Unauthorized);
         }
 
         if (user.IsBlocked)
         {
             return ServiceResult<LoginResponseDto>.Failure(
-                "This account is blocked.",
+                "Ovaj nalog je blokiran.",
                 StatusCodes.Status403Forbidden);
         }
 
@@ -110,7 +110,7 @@ public class AuthService(IUserRepository userRepository) : IAuthService
                 Email = user.Email,
                 Role = user.Role.ToString(),
                 IsBlocked = user.IsBlocked,
-                Message = $"Login successful. Welcome {user.Username}."
+                Message = $"Prijava je uspesna. Dobrodosao, {user.Username}."
             });
     }
 }
