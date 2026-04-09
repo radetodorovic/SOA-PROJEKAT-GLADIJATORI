@@ -75,7 +75,7 @@ export class AuthComponent {
           })
         );
 
-        this.successMessage = `${response.message} Role: ${response.role}.`;
+        this.successMessage = `${response.message} Uloga: ${this.getRoleLabel(response.role)}.`;
         this.isSubmitting = false;
 
         if (response.role === 'Admin') {
@@ -112,7 +112,7 @@ export class AuthComponent {
 
     this.authService.register(payload).subscribe({
       next: (user) => {
-        this.successMessage = `Nalog za korisnika ${user.username} je uspesno kreiran kao ${user.role}.`;
+        this.successMessage = `Nalog za korisnika ${user.username} je uspesno kreiran kao ${this.getRoleLabel(user.role)}.`;
         this.isSubmitting = false;
         this.registerForm.reset({
           username: '',
@@ -154,5 +154,18 @@ export class AuthComponent {
     }
 
     return password === confirmPassword ? null : { passwordMismatch: true };
+  }
+
+  private getRoleLabel(role: string): string {
+    switch (role) {
+      case 'Admin':
+        return 'Administrator';
+      case 'Guide':
+        return 'Vodic';
+      case 'Tourist':
+        return 'Turista';
+      default:
+        return role;
+    }
   }
 }

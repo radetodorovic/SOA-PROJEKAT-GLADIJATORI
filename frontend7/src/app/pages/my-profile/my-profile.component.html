@@ -1,12 +1,12 @@
 <section class="profile-layout" *ngIf="currentUser as user">
-  <article class="profile-card">
+  <article class="profile-card" *ngIf="!isLoadingProfile; else loadingProfile">
     <div class="profile-header">
       <div>
         <p class="section-label">GLADIJATORI</p>
         <h2>Moj profil</h2>
         <p>Pregled osnovnih podataka za ulogovanog korisnika.</p>
       </div>
-      <button type="button" class="logout-btn" (click)="logout()">Logout</button>
+      <button type="button" class="logout-btn" (click)="logout()">Odjava</button>
     </div>
 
     <p class="state success" *ngIf="infoMessage">{{ infoMessage }}</p>
@@ -14,7 +14,7 @@
 
     <div class="basic-grid">
       <div class="basic-item">
-        <span>Username</span>
+        <span>Korisnicko ime</span>
         <strong>{{ user.username }}</strong>
       </div>
       <div class="basic-item">
@@ -23,11 +23,7 @@
       </div>
       <div class="basic-item">
         <span>Uloga</span>
-        <strong>{{ user.role }}</strong>
-      </div>
-      <div class="basic-item">
-        <span>Status</span>
-        <strong>{{ user.isBlocked ? 'Blocked' : 'Active' }}</strong>
+        <strong>{{ getRoleLabel(user.role) }}</strong>
       </div>
     </div>
 
@@ -90,4 +86,10 @@
       </article>
     </section>
   </article>
+
+  <ng-template #loadingProfile>
+    <article class="profile-card">
+      <p>Ucitavanje profila...</p>
+    </article>
+  </ng-template>
 </section>

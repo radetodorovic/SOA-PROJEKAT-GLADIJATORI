@@ -64,6 +64,19 @@ export class AdminUsersComponent implements OnInit {
     return this.blockingUserIds.has(userId);
   }
 
+  getRoleLabel(role: string): string {
+    switch (role) {
+      case 'Admin':
+        return 'Administrator';
+      case 'Guide':
+        return 'Vodic';
+      case 'Tourist':
+        return 'Turista';
+      default:
+        return role;
+    }
+  }
+
   private readAdminIdFromStorage(): number | null {
     const raw = localStorage.getItem('currentUser');
     if (!raw) {
