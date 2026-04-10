@@ -4,3 +4,4 @@ bin/
 obj/
 node_modules/
 dist/
+frontend7/src/environments/environment.ts
