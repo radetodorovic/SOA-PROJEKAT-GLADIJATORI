@@ -9,7 +9,7 @@
 
     <ng-container *ngIf="blog as item">
       <h2>{{ item.title }}</h2>
-      <p class="meta">Autor #{{ item.authorId }} | {{ formatDate(item.createdAtUtc) }}</p>
+      <p class="meta">Autor {{ getAuthorLabel(item.authorId) }} | {{ formatDate(item.createdAtUtc) }}</p>
       <p class="format">Format opisa: {{ item.descriptionFormat }}</p>
 
       <section class="content-box">
@@ -21,6 +21,78 @@
         <h3>Slike</h3>
         <div class="images">
           <img *ngFor="let image of item.images" [src]="image" alt="Slika bloga" />
+        </div>
+      </section>
+
+      <section class="content-box comments-box">
+        <h3>Komentari</h3>
+
+        <p class="state error" *ngIf="commentsErrorMessage">{{ commentsErrorMessage }}</p>
+        <p class="state info" *ngIf="commentsInfoMessage">{{ commentsInfoMessage }}</p>
+
+        <form class="comment-form" (ngSubmit)="submitComment()" *ngIf="currentUser">
+          <label for="newCommentText">Dodaj komentar</label>
+          <textarea
+            id="newCommentText"
+            name="newCommentText"
+            [(ngModel)]="newCommentText"
+            maxlength="5000"
+            rows="4"
+            placeholder="Napisite komentar..."
+          ></textarea>
+          <p class="counter">{{ newCommentText.length }}/5000</p>
+          <button type="submit" [disabled]="isSubmittingComment || isLoadingComments">
+            {{ isSubmittingComment ? 'Slanje...' : 'Objavi komentar' }}
+          </button>
+        </form>
+
+        <p class="state" *ngIf="isLoadingComments">Ucitavanje komentara...</p>
+        <p class="state" *ngIf="!isLoadingComments && comments.length === 0">Jos nema komentara za ovaj blog.</p>
+
+        <div class="comments-list" *ngIf="!isLoadingComments && comments.length > 0">
+          <article class="comment-card" *ngFor="let comment of comments">
+            <div class="comment-header">
+              <p class="comment-author">{{ getAuthorLabel(comment.userId) }}</p>
+              <p class="comment-time">
+                Kreirano: {{ formatDate(comment.createdAtUtc) }}
+                <span *ngIf="isEdited(comment)"> | Izmenjeno: {{ formatDate(comment.updatedAtUtc) }}</span>
+              </p>
+            </div>
+
+            <div *ngIf="editingCommentId !== comment.id; else editCommentBlock">
+              <p class="comment-text">{{ comment.text }}</p>
+
+              <div class="comment-actions" *ngIf="canManageComment(comment)">
+                <button type="button" (click)="startEditComment(comment)" [disabled]="isSubmittingComment">Izmeni</button>
+                <button
+                  type="button"
+                  class="danger"
+                  (click)="deleteComment(comment)"
+                  [disabled]="isSubmittingComment && deletingCommentId === comment.id"
+                >
+                  {{ isSubmittingComment && deletingCommentId === comment.id ? 'Brisanje...' : 'Obrisi' }}
+                </button>
+              </div>
+            </div>
+
+            <ng-template #editCommentBlock>
+              <div class="comment-edit-form">
+                <textarea
+                  name="editCommentText"
+                  [(ngModel)]="editingCommentText"
+                  maxlength="5000"
+                  rows="4"
+                ></textarea>
+                <p class="counter">{{ editingCommentText.length }}/5000</p>
+                <div class="comment-actions">
+                  <button type="button" (click)="saveEditedComment(comment)" [disabled]="isSubmittingComment">
+                    {{ isSubmittingComment ? 'Cuvanje...' : 'Sacuvaj izmene' }}
+                  </button>
+                  <button type="button" (click)="cancelEditComment()" [disabled]="isSubmittingComment">Odustani</button>
+                </div>
+              </div>
+            </ng-template>
+          </article>
         </div>
       </section>
     </ng-container>

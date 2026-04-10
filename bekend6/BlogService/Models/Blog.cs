@@ -8,4 +8,5 @@ public class Blog
     public string Description { get; set; } = string.Empty;
     public DateTime CreatedAtUtc { get; set; }
     public ICollection<BlogImage> Images { get; set; } = [];
+    public ICollection<BlogComment> Comments { get; set; } = [];
 }

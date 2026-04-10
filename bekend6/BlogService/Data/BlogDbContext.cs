@@ -7,6 +7,7 @@ public class BlogDbContext(DbContextOptions<BlogDbContext> options) : DbContext(
 {
     public DbSet<Blog> Blogs => Set<Blog>();
     public DbSet<BlogImage> BlogImages => Set<BlogImage>();
+    public DbSet<BlogComment> BlogComments => Set<BlogComment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -44,6 +45,32 @@ public class BlogDbContext(DbContextOptions<BlogDbContext> options) : DbContext(
 
             entity.Property(image => image.OrderIndex)
                 .IsRequired();
+        });
+
+        modelBuilder.Entity<BlogComment>(entity =>
+        {
+            entity.HasKey(comment => comment.Id);
+
+            entity.Property(comment => comment.BlogId)
+                .IsRequired();
+
+            entity.Property(comment => comment.UserId)
+                .IsRequired();
+
+            entity.Property(comment => comment.Text)
+                .HasColumnType("text")
+                .IsRequired();
+
+            entity.Property(comment => comment.CreatedAtUtc)
+                .IsRequired();
+
+            entity.Property(comment => comment.UpdatedAtUtc)
+                .IsRequired();
+
+            entity.HasOne(comment => comment.Blog)
+                .WithMany(blog => blog.Comments)
+                .HasForeignKey(comment => comment.BlogId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

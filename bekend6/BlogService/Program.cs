@@ -14,6 +14,8 @@ builder.Services.AddDbContext<BlogDbContext>(options =>
 
 builder.Services.AddScoped<IBlogRepository, BlogRepository>();
 builder.Services.AddScoped<IBlogService, BlogService.Services.BlogService>();
+builder.Services.AddScoped<IBlogCommentRepository, BlogCommentRepository>();
+builder.Services.AddScoped<ICommentService, CommentService>();
 
 builder.Services.AddCors(options =>
 {
