@@ -1,0 +1,56 @@
+services:
+  stakeholders-db:
+    image: postgres:16
+    container_name: stakeholders-db
+    environment:
+      POSTGRES_DB: stakeholders_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+    ports:
+      - "5432:5432"
+    volumes:
+      - stakeholders-db-data:/var/lib/postgresql/data
+
+  stakeholders-service:
+    build:
+      context: ./bekend6/StakeholdersService
+    image: stakeholders-service
+    container_name: stakeholders-service
+    depends_on:
+      - stakeholders-db
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Host=stakeholders-db;Port=5432;Database=stakeholders_db;Username=postgres;Password=root
+    ports:
+      - "5008:8080"
+
+  blog-db:
+    image: postgres:16
+    container_name: blog-db
+    environment:
+      POSTGRES_DB: blog_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+    ports:
+      - "5433:5432"
+    volumes:
+      - blog-db-data:/var/lib/postgresql/data
+
+  blog-service:
+    build:
+      context: ./bekend6/BlogService
+    image: blog-service
+    container_name: blog-service
+    depends_on:
+      - blog-db
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Host=blog-db;Port=5432;Database=blog_db;Username=postgres;Password=root
+    ports:
+      - "5009:8080"
+
+volumes:
+  stakeholders-db-data:
+  blog-db-data:

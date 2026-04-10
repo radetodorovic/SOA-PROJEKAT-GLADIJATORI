@@ -1,0 +1,22 @@
+1) idi u folder servisa
+  cd C:\Users\Korisnik\Desktop\SOA\SOA-PROJEKAT-GLADIJATORI\bekend6\StakeholdersService
+
+  # 2) build Docker image
+  docker build -t stakeholders-service .
+
+  # 3) (opciono) ugasi i obrisi stari kontejner ako postoji
+  docker rm -f stakeholders-service
+
+  # 4) pokreni novi kontejner (PostgreSQL je na host masini)
+  docker run -d --name stakeholders-service -p 5008:8080 
+    -e ASPNETCORE_ENVIRONMENT=Development 
+    -e
+  ConnectionStrings__DefaultConnection="Host=host.docker.internal;Port=5432;Database=stakeholders_db;Username=postgres;P
+  assword=root" `
+    stakeholders-service
+
+  # 5) proveri da li kontejner radi
+  docker ps
+
+  # 6) pogledaj logove
+  docker logs -f stakeholders-service
