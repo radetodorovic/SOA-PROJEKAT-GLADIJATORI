@@ -1,5 +1,5 @@
 export const environment = {
   production: false,
-  apiBaseUrl: 'https://localhost:7069/api',
+  apiBaseUrl: 'http://localhost:5008/api',
   blogApiBaseUrl: 'https://localhost:7105/api'
 };
