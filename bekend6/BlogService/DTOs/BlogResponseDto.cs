@@ -10,4 +10,6 @@ public class BlogResponseDto
     public string DescriptionFormat { get; init; } = "markdown";
     public IReadOnlyCollection<string> Images { get; init; } = [];
     public IReadOnlyCollection<CommentResponseDto> Comments { get; init; } = [];
+    public int LikesCount { get; init; }
+    public bool IsLikedByCurrentUser { get; init; }
 }

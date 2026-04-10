@@ -16,6 +16,8 @@ builder.Services.AddScoped<IBlogRepository, BlogRepository>();
 builder.Services.AddScoped<IBlogService, BlogService.Services.BlogService>();
 builder.Services.AddScoped<IBlogCommentRepository, BlogCommentRepository>();
 builder.Services.AddScoped<ICommentService, CommentService>();
+builder.Services.AddScoped<IBlogLikeRepository, BlogLikeRepository>();
+builder.Services.AddScoped<ILikeService, LikeService>();
 
 builder.Services.AddCors(options =>
 {

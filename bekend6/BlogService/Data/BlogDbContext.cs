@@ -8,6 +8,7 @@ public class BlogDbContext(DbContextOptions<BlogDbContext> options) : DbContext(
     public DbSet<Blog> Blogs => Set<Blog>();
     public DbSet<BlogImage> BlogImages => Set<BlogImage>();
     public DbSet<BlogComment> BlogComments => Set<BlogComment>();
+    public DbSet<BlogLike> BlogLikes => Set<BlogLike>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -71,6 +72,29 @@ public class BlogDbContext(DbContextOptions<BlogDbContext> options) : DbContext(
                 .WithMany(blog => blog.Comments)
                 .HasForeignKey(comment => comment.BlogId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<BlogLike>(entity =>
+        {
+            entity.HasKey(like => like.Id);
+
+            entity.Property(like => like.BlogId)
+                .IsRequired();
+
+            entity.Property(like => like.UserId)
+                .IsRequired();
+
+            entity.Property(like => like.CreatedAtUtc)
+                .IsRequired();
+
+            entity.HasOne(like => like.Blog)
+                .WithMany(blog => blog.Likes)
+                .HasForeignKey(like => like.BlogId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Sprje?ava da isti korisnik lajkuje istu objavu više puta
+            entity.HasIndex(like => new { like.BlogId, like.UserId })
+                .IsUnique();
         });
     }
 }

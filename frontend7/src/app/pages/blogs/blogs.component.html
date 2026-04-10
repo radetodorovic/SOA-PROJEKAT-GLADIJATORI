@@ -54,6 +54,7 @@
         <article class="blog-item" *ngFor="let blog of blogs">
           <h4>{{ blog.title }}</h4>
           <p class="meta">Autor #{{ blog.authorId }} | {{ formatDate(blog.createdAtUtc) }}</p>
+          <p class="meta" *ngIf="blog.likesCount !== undefined">Lajkovi: {{ blog.likesCount }}</p>
           <p class="preview">{{ blog.description }}</p>
           <button type="button" (click)="openBlog(blog.id)">Prikazi detalje</button>
         </article>

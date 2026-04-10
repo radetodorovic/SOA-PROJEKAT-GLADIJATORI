@@ -4,14 +4,18 @@ using BlogService.Repositories;
 
 namespace BlogService.Services;
 
-public class BlogService(IBlogRepository blogRepository) : IBlogService
+public class BlogService(
+    IBlogRepository blogRepository,
+    IBlogLikeRepository likeRepository) : IBlogService
 {
     private const int MaxTitleLength = 200;
 
     public async Task<IReadOnlyCollection<BlogResponseDto>> GetAllBlogsAsync(CancellationToken cancellationToken = default)
     {
         var blogs = await blogRepository.GetAllAsync(cancellationToken);
-        return blogs.Select(MapBlog).ToList();
+        var tasks = blogs.Select(blog => MapBlog(blog, userId: null));
+        var results = await Task.WhenAll(tasks);
+        return results.ToList();
     }
 
     public async Task<ServiceResult<BlogResponseDto>> GetBlogByIdAsync(int blogId, CancellationToken cancellationToken = default)
@@ -31,7 +35,8 @@ public class BlogService(IBlogRepository blogRepository) : IBlogService
                 StatusCodes.Status404NotFound);
         }
 
-        return ServiceResult<BlogResponseDto>.Success(MapBlog(blog));
+        var dto = await MapBlog(blog, userId: null);
+        return ServiceResult<BlogResponseDto>.Success(dto);
     }
 
     public async Task<ServiceResult<BlogResponseDto>> CreateBlogAsync(
@@ -94,14 +99,22 @@ public class BlogService(IBlogRepository blogRepository) : IBlogService
 
         var savedBlog = await blogRepository.AddAsync(blog, cancellationToken);
 
+        var dto = await MapBlog(savedBlog, userId: authorId);
         return ServiceResult<BlogResponseDto>.Success(
-            MapBlog(savedBlog),
+            dto,
             StatusCodes.Status201Created,
             "Blog je uspesno kreiran.");
     }
 
-    private static BlogResponseDto MapBlog(Models.Blog blog)
+    private async Task<BlogResponseDto> MapBlog(Models.Blog blog, int? userId)
     {
+        var isLikedByCurrentUser = false;
+        if (userId.HasValue && userId.Value > 0)
+        {
+            var like = await likeRepository.GetLikeAsync(blog.Id, userId.Value);
+            isLikedByCurrentUser = like is not null;
+        }
+
         return new BlogResponseDto
         {
             Id = blog.Id,
@@ -124,7 +137,9 @@ public class BlogService(IBlogRepository blogRepository) : IBlogService
                     CreatedAtUtc = comment.CreatedAtUtc,
                     UpdatedAtUtc = comment.UpdatedAtUtc
                 })
-                .ToList()
+                .ToList(),
+            LikesCount = blog.Likes.Count,
+            IsLikedByCurrentUser = isLikedByCurrentUser
         };
     }
 }
