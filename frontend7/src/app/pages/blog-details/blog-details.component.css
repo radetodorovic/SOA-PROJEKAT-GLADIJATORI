@@ -90,6 +90,29 @@ button {
   color: #2c7a4b;
 }
 
+.likes-box {
+  margin-top: 12px;
+}
+
+.likes-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.like-btn {
+  border-color: #b24966;
+  color: #8f2247;
+  background: #fff1f4;
+}
+
+.likes-count {
+  margin: 0;
+  font-weight: 700;
+  color: #5f2f3f;
+}
+
 .comments-box {
   margin-top: 18px;
 }

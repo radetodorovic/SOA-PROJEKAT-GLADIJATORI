@@ -6,4 +6,6 @@ export interface BlogPost {
   createdAtUtc: string;
   descriptionFormat: string;
   images: string[];
+  likesCount?: number;
+  isLikedByCurrentUser?: boolean;
 }

@@ -12,6 +12,7 @@ public class BlogRepository(BlogDbContext dbContext) : IBlogRepository
             .AsNoTracking()
             .Include(blog => blog.Images.OrderBy(image => image.OrderIndex))
             .Include(blog => blog.Comments.OrderByDescending(comment => comment.CreatedAtUtc))
+            .Include(blog => blog.Likes)
             .OrderByDescending(blog => blog.CreatedAtUtc)
             .ToListAsync(cancellationToken);
     }
@@ -22,6 +23,7 @@ public class BlogRepository(BlogDbContext dbContext) : IBlogRepository
             .AsNoTracking()
             .Include(blog => blog.Images.OrderBy(image => image.OrderIndex))
             .Include(blog => blog.Comments.OrderByDescending(comment => comment.CreatedAtUtc))
+            .Include(blog => blog.Likes)
             .FirstOrDefaultAsync(blog => blog.Id == id, cancellationToken);
     }
 

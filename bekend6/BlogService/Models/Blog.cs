@@ -9,4 +9,5 @@ public class Blog
     public DateTime CreatedAtUtc { get; set; }
     public ICollection<BlogImage> Images { get; set; } = [];
     public ICollection<BlogComment> Comments { get; set; } = [];
+    public ICollection<BlogLike> Likes { get; set; } = [];
 }

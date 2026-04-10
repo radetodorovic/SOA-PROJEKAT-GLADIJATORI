@@ -12,6 +12,16 @@
       <p class="meta">Autor {{ getAuthorLabel(item.authorId) }} | {{ formatDate(item.createdAtUtc) }}</p>
       <p class="format">Format opisa: {{ item.descriptionFormat }}</p>
 
+      <section class="content-box likes-box">
+        <div class="likes-row">
+          <button type="button" class="like-btn" (click)="toggleLike()" [disabled]="isUpdatingLike">
+            {{ isLikedByCurrentUser ? 'Ukloni lajk' : 'Lajkuj objavu' }}
+          </button>
+          <p class="likes-count">Lajkovi: {{ likesCount }}</p>
+        </div>
+        <p class="state error" *ngIf="likesErrorMessage">{{ likesErrorMessage }}</p>
+      </section>
+
       <section class="content-box">
         <h3>Opis bloga</h3>
         <p class="description">{{ item.description }}</p>

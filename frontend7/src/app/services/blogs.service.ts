@@ -6,6 +6,7 @@ import { BlogPost } from '../models/blog-post';
 import { CreateBlogRequest } from '../models/create-blog-request';
 import { BlogComment } from '../models/blog-comment';
 import { CreateCommentRequest } from '../models/create-comment-request';
+import { BlogLikesResponse } from '../models/blog-likes-response';
 
 @Injectable({
   providedIn: 'root'
@@ -57,6 +58,34 @@ export class BlogsService {
 
   deleteComment(blogId: number, commentId: number, userId: number): Observable<void> {
     return this.http.delete<void>(`${this.blogsUrl}/${blogId}/comments/${commentId}`, {
+      headers: {
+        'X-User-Id': String(userId)
+      }
+    });
+  }
+
+  likeBlog(blogId: number, userId: number): Observable<BlogLikesResponse> {
+    return this.http.post<BlogLikesResponse>(`${this.blogsUrl}/${blogId}/likes`, {}, {
+      headers: {
+        'X-User-Id': String(userId)
+      }
+    });
+  }
+
+  unlikeBlog(blogId: number, userId: number): Observable<BlogLikesResponse> {
+    return this.http.delete<BlogLikesResponse>(`${this.blogsUrl}/${blogId}/likes`, {
+      headers: {
+        'X-User-Id': String(userId)
+      }
+    });
+  }
+
+  getLikesCount(blogId: number): Observable<number> {
+    return this.http.get<number>(`${this.blogsUrl}/${blogId}/likes/count`);
+  }
+
+  isLikedByUser(blogId: number, userId: number): Observable<boolean> {
+    return this.http.get<boolean>(`${this.blogsUrl}/${blogId}/likes/check`, {
       headers: {
         'X-User-Id': String(userId)
       }

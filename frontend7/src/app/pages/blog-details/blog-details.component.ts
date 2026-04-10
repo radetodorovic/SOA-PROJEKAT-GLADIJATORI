@@ -26,10 +26,13 @@ export class BlogDetailsComponent implements OnInit {
   currentUser: CurrentUser | null = null;
   blog: BlogPost | null = null;
   comments: BlogComment[] = [];
+  likesCount = 0;
+  isLikedByCurrentUser = false;
 
   isLoading = true;
   isLoadingComments = false;
   isSubmittingComment = false;
+  isUpdatingLike = false;
 
   editingCommentId: number | null = null;
   editingCommentText = '';
@@ -38,6 +41,7 @@ export class BlogDetailsComponent implements OnInit {
   newCommentText = '';
 
   errorMessage = '';
+  likesErrorMessage = '';
   commentsErrorMessage = '';
   commentsInfoMessage = '';
 
@@ -66,12 +70,15 @@ export class BlogDetailsComponent implements OnInit {
         this.errorMessage = 'Neispravan id bloga.';
         this.blog = null;
         this.comments = [];
+        this.likesCount = 0;
+        this.isLikedByCurrentUser = false;
         this.isLoading = false;
         this.isLoadingComments = false;
         return;
       }
 
       this.loadBlog(blogId);
+      this.loadLikes(blogId);
       this.loadComments(blogId);
     });
   }
@@ -91,6 +98,31 @@ export class BlogDetailsComponent implements OnInit {
 
   canManageComment(comment: BlogComment): boolean {
     return this.currentUser?.id === comment.userId;
+  }
+
+  toggleLike(): void {
+    if (!this.currentUser || !this.blog || this.isUpdatingLike) {
+      return;
+    }
+
+    this.isUpdatingLike = true;
+    this.likesErrorMessage = '';
+
+    const request$ = this.isLikedByCurrentUser
+      ? this.blogsService.unlikeBlog(this.blog.id, this.currentUser.id)
+      : this.blogsService.likeBlog(this.blog.id, this.currentUser.id);
+
+    request$.subscribe({
+      next: (response) => {
+        this.likesCount = response.likesCount;
+        this.isLikedByCurrentUser = !this.isLikedByCurrentUser;
+        this.isUpdatingLike = false;
+      },
+      error: (error: HttpErrorResponse) => {
+        this.likesErrorMessage = error.error?.message ?? 'Neuspesna promena lajka.';
+        this.isUpdatingLike = false;
+      }
+    });
   }
 
   submitComment(): void {
@@ -260,6 +292,34 @@ export class BlogDetailsComponent implements OnInit {
         this.commentsErrorMessage = error.error?.message ?? 'Neuspesno ucitavanje komentara.';
         this.comments = [];
         this.isLoadingComments = false;
+      }
+    });
+  }
+
+  private loadLikes(blogId: number): void {
+    this.likesErrorMessage = '';
+    this.likesCount = 0;
+    this.isLikedByCurrentUser = false;
+
+    this.blogsService.getLikesCount(blogId).subscribe({
+      next: (count) => {
+        this.likesCount = count;
+      },
+      error: (error: HttpErrorResponse) => {
+        this.likesErrorMessage = error.error?.message ?? 'Neuspesno ucitavanje broja lajkova.';
+      }
+    });
+
+    if (!this.currentUser) {
+      return;
+    }
+
+    this.blogsService.isLikedByUser(blogId, this.currentUser.id).subscribe({
+      next: (isLiked) => {
+        this.isLikedByCurrentUser = isLiked;
+      },
+      error: () => {
+        this.isLikedByCurrentUser = false;
       }
     });
   }
