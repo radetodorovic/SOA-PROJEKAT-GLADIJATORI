@@ -9,4 +9,5 @@ public class BlogResponseDto
     public DateTime CreatedAtUtc { get; init; }
     public string DescriptionFormat { get; init; } = "markdown";
     public IReadOnlyCollection<string> Images { get; init; } = [];
+    public IReadOnlyCollection<CommentResponseDto> Comments { get; init; } = [];
 }

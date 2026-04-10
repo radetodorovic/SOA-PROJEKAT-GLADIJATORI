@@ -112,6 +112,18 @@ public class BlogService(IBlogRepository blogRepository) : IBlogService
             Images = blog.Images
                 .OrderBy(image => image.OrderIndex)
                 .Select(image => image.Url)
+                .ToList(),
+            Comments = blog.Comments
+                .OrderByDescending(comment => comment.CreatedAtUtc)
+                .Select(comment => new CommentResponseDto
+                {
+                    Id = comment.Id,
+                    BlogId = comment.BlogId,
+                    UserId = comment.UserId,
+                    Text = comment.Text,
+                    CreatedAtUtc = comment.CreatedAtUtc,
+                    UpdatedAtUtc = comment.UpdatedAtUtc
+                })
                 .ToList()
         };
     }

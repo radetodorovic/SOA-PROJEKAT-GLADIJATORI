@@ -18,6 +18,10 @@ export class UsersService {
     return this.http.get<UserAccount[]>(this.usersUrl);
   }
 
+  getUserById(userId: number): Observable<UserAccount> {
+    return this.http.get<UserAccount>(`${this.usersUrl}/${userId}`);
+  }
+
   blockUser(userId: number, adminId: number): Observable<UserAccount> {
     return this.http.patch<UserAccount>(
       `${this.usersUrl}/${userId}/block`,
