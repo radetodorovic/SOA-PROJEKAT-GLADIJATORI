@@ -10,6 +10,13 @@ services:
       - "5432:5432"
     volumes:
       - stakeholders-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d stakeholders_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - soa-network
 
   stakeholders-service:
     build:
@@ -17,13 +24,17 @@ services:
     image: stakeholders-service
     container_name: stakeholders-service
     depends_on:
-      - stakeholders-db
+      stakeholders-db:
+        condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__DefaultConnection: Host=stakeholders-db;Port=5432;Database=stakeholders_db;Username=postgres;Password=root
     ports:
       - "5008:8080"
+    restart: on-failure
+    networks:
+      - soa-network
 
   blog-db:
     image: postgres:16
@@ -36,6 +47,13 @@ services:
       - "5433:5432"
     volumes:
       - blog-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d blog_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - soa-network
 
   blog-service:
     build:
@@ -43,14 +61,22 @@ services:
     image: blog-service
     container_name: blog-service
     depends_on:
-      - blog-db
+      blog-db:
+        condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__DefaultConnection: Host=blog-db;Port=5432;Database=blog_db;Username=postgres;Password=root
     ports:
       - "5009:8080"
+    restart: on-failure
+    networks:
+      - soa-network
 
 volumes:
   stakeholders-db-data:
   blog-db-data:
+
+networks:
+  soa-network:
+    driver: bridge
