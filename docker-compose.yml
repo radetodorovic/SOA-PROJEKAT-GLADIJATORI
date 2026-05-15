@@ -147,6 +147,33 @@ services:
     networks:
       - soa-network
 
+  api-gateway:
+    build:
+      context: ./bekend6/ApiGateway
+    image: api-gateway
+    container_name: api-gateway
+    depends_on:
+      stakeholders-service:
+        condition: service_started
+      blog-service:
+        condition: service_started
+      follower-service:
+        condition: service_started
+      tour-service:
+        condition: service_started
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      Services__StakeholdersService__BaseUrl: http://stakeholders-service:8080
+      Services__BlogService__BaseUrl: http://blog-service:8080
+      Services__FollowerService__BaseUrl: http://follower-service:8080
+      Services__TourService__BaseUrl: http://tour-service:8080
+    ports:
+      - "5000:8080"
+    restart: on-failure
+    networks:
+      - soa-network
+
 volumes:
   stakeholders-db-data:
   blog-db-data:
