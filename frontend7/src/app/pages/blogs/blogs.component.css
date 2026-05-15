@@ -61,6 +61,49 @@ h4 {
   margin-bottom: 14px;
 }
 
+.section-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.followers-box {
+  background: #fffaf2;
+}
+
+.follow-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.follow-panel {
+  border: 1px solid #e3d0b4;
+  border-radius: 10px;
+  padding: 12px;
+  background: #fffdf9;
+}
+
+.user-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-top: 1px solid #efe3d3;
+}
+
+.user-row:first-of-type {
+  border-top: 0;
+}
+
+.user-row span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 label {
   display: grid;
   gap: 8px;
@@ -164,5 +207,13 @@ button {
 @media (max-width: 760px) {
   .blogs-header {
     flex-direction: column;
+  }
+
+  .section-row {
+    flex-direction: column;
+  }
+
+  .follow-grid {
+    grid-template-columns: 1fr;
   }
 }

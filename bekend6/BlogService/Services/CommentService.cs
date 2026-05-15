@@ -6,7 +6,8 @@ namespace BlogService.Services;
 
 public class CommentService(
     IBlogCommentRepository commentRepository,
-    IBlogRepository blogRepository) : ICommentService
+    IBlogRepository blogRepository,
+    IFollowerClient followerClient) : ICommentService
 {
     private const int MaxCommentLength = 5000;
 
@@ -66,6 +67,28 @@ public class CommentService(
             return ServiceResult<CommentResponseDto>.Failure(
                 "Blog nije prona?en.",
                 StatusCodes.Status404NotFound);
+        }
+
+        if (blog.AuthorId != userId)
+        {
+            bool followsAuthor;
+            try
+            {
+                followsAuthor = await followerClient.IsFollowingAsync(userId, blog.AuthorId, cancellationToken);
+            }
+            catch
+            {
+                return ServiceResult<CommentResponseDto>.Failure(
+                    "Follower servis trenutno nije dostupan.",
+                    StatusCodes.Status503ServiceUnavailable);
+            }
+
+            if (!followsAuthor)
+            {
+                return ServiceResult<CommentResponseDto>.Failure(
+                    "Komentarisanje je dozvoljeno samo za blogove autora koje pratite.",
+                    StatusCodes.Status403Forbidden);
+            }
         }
 
         var text = request.Text.Trim();
@@ -136,6 +159,7 @@ public class CommentService(
                 "Niste autorizovani da ažurirate ovaj komentar.",
                 StatusCodes.Status403Forbidden);
         }
+
 
         var text = request.Text.Trim();
 
@@ -240,3 +264,5 @@ public class CommentService(
         };
     }
 }
+
+

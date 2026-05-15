@@ -1,0 +1,29 @@
+@baseUrl = http://localhost:5010
+@userId = 1
+@targetUserId = 2
+
+### Health
+GET {{baseUrl}}/health
+
+### Follow user
+POST {{baseUrl}}/api/followers/{{targetUserId}}
+Content-Type: application/json
+X-User-Id: {{userId}}
+
+{
+  "followerUsername": "user-1",
+  "targetUsername": "user-2"
+}
+
+### Check follow relation
+GET {{baseUrl}}/api/followers/check?followerId={{userId}}&targetId={{targetUserId}}
+
+### Get followed users
+GET {{baseUrl}}/api/followers/following/{{userId}}
+
+### Get recommendations
+GET {{baseUrl}}/api/followers/recommendations/{{userId}}
+
+### Unfollow user
+DELETE {{baseUrl}}/api/followers/{{targetUserId}}
+X-User-Id: {{userId}}

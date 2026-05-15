@@ -6,25 +6,66 @@ namespace BlogService.Services;
 
 public class BlogService(
     IBlogRepository blogRepository,
-    IBlogLikeRepository likeRepository) : IBlogService
+    IFollowerClient followerClient) : IBlogService
 {
     private const int MaxTitleLength = 200;
 
     public async Task<IReadOnlyCollection<BlogResponseDto>> GetAllBlogsAsync(CancellationToken cancellationToken = default)
     {
         var blogs = await blogRepository.GetAllAsync(cancellationToken);
-        var tasks = blogs.Select(blog => MapBlog(blog, userId: null));
-        var results = await Task.WhenAll(tasks);
-        return results.ToList();
+        return blogs.Select(blog => MapBlog(blog, userId: null)).ToList();
     }
 
-    public async Task<ServiceResult<BlogResponseDto>> GetBlogByIdAsync(int blogId, CancellationToken cancellationToken = default)
+    public async Task<ServiceResult<IReadOnlyCollection<BlogResponseDto>>> GetFeedAsync(
+        int userId,
+        CancellationToken cancellationToken = default)
+    {
+        if (userId <= 0)
+        {
+            return ServiceResult<IReadOnlyCollection<BlogResponseDto>>.Failure(
+                "User header X-User-Id je obavezan.",
+                StatusCodes.Status401Unauthorized);
+        }
+
+        IReadOnlyCollection<int> followingIds;
+        try
+        {
+            followingIds = await followerClient.GetFollowingIdsAsync(userId, cancellationToken);
+        }
+        catch
+        {
+            return ServiceResult<IReadOnlyCollection<BlogResponseDto>>.Failure(
+                "Follower servis trenutno nije dostupan.",
+                StatusCodes.Status503ServiceUnavailable);
+        }
+
+        var allowedAuthorIds = followingIds
+            .Append(userId)
+            .Distinct()
+            .ToList();
+
+        var blogs = await blogRepository.GetByAuthorIdsAsync(allowedAuthorIds, cancellationToken);
+        var results = blogs.Select(blog => MapBlog(blog, userId)).ToList();
+        return ServiceResult<IReadOnlyCollection<BlogResponseDto>>.Success(results);
+    }
+
+    public async Task<ServiceResult<BlogResponseDto>> GetBlogByIdAsync(
+        int blogId,
+        int userId,
+        CancellationToken cancellationToken = default)
     {
         if (blogId <= 0)
         {
             return ServiceResult<BlogResponseDto>.Failure(
                 "Id bloga mora biti pozitivan broj.",
                 StatusCodes.Status400BadRequest);
+        }
+
+        if (userId <= 0)
+        {
+            return ServiceResult<BlogResponseDto>.Failure(
+                "User header X-User-Id je obavezan.",
+                StatusCodes.Status401Unauthorized);
         }
 
         var blog = await blogRepository.GetByIdAsync(blogId, cancellationToken);
@@ -35,7 +76,14 @@ public class BlogService(
                 StatusCodes.Status404NotFound);
         }
 
-        var dto = await MapBlog(blog, userId: null);
+        if (!await CanReadAuthorAsync(userId, blog.AuthorId, cancellationToken))
+        {
+            return ServiceResult<BlogResponseDto>.Failure(
+                "Mozete citati samo blogove autora koje pratite.",
+                StatusCodes.Status403Forbidden);
+        }
+
+        var dto = MapBlog(blog, userId);
         return ServiceResult<BlogResponseDto>.Success(dto);
     }
 
@@ -99,20 +147,19 @@ public class BlogService(
 
         var savedBlog = await blogRepository.AddAsync(blog, cancellationToken);
 
-        var dto = await MapBlog(savedBlog, userId: authorId);
+        var dto = MapBlog(savedBlog, userId: authorId);
         return ServiceResult<BlogResponseDto>.Success(
             dto,
             StatusCodes.Status201Created,
             "Blog je uspesno kreiran.");
     }
 
-    private async Task<BlogResponseDto> MapBlog(Models.Blog blog, int? userId)
+    private static BlogResponseDto MapBlog(Models.Blog blog, int? userId)
     {
         var isLikedByCurrentUser = false;
         if (userId.HasValue && userId.Value > 0)
         {
-            var like = await likeRepository.GetLikeAsync(blog.Id, userId.Value);
-            isLikedByCurrentUser = like is not null;
+            isLikedByCurrentUser = blog.Likes.Any(like => like.UserId == userId.Value);
         }
 
         return new BlogResponseDto
@@ -141,5 +188,25 @@ public class BlogService(
             LikesCount = blog.Likes.Count,
             IsLikedByCurrentUser = isLikedByCurrentUser
         };
+    }
+
+    private async Task<bool> CanReadAuthorAsync(
+        int userId,
+        int authorId,
+        CancellationToken cancellationToken)
+    {
+        if (userId == authorId)
+        {
+            return true;
+        }
+
+        try
+        {
+            return await followerClient.IsFollowingAsync(userId, authorId, cancellationToken);
+        }
+        catch
+        {
+            return false;
+        }
     }
 }

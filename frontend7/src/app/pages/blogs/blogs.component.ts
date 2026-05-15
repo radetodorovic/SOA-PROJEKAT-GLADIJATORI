@@ -2,8 +2,12 @@ import { Component, OnInit } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { BlogsService } from '../../services/blogs.service';
+import { FollowersService } from '../../services/followers.service';
+import { UsersService } from '../../services/users.service';
 import { BlogPost } from '../../models/blog-post';
 import { CreateBlogRequest } from '../../models/create-blog-request';
+import { UserAccount } from '../../models/user-account';
+import { FollowerUser } from '../../models/follower-user';
 
 type AppRole = 'Admin' | 'Guide' | 'Tourist';
 
@@ -23,20 +27,28 @@ interface CurrentUser {
 export class BlogsComponent implements OnInit {
   currentUser: CurrentUser | null = null;
   blogs: BlogPost[] = [];
+  users: UserAccount[] = [];
+  following: FollowerUser[] = [];
+  recommendations: FollowerUser[] = [];
 
   titleInput = '';
   descriptionInput = '';
   selectedImages: string[] = [];
 
   isLoadingBlogs = true;
+  isLoadingFollowers = false;
   isSavingBlog = false;
+  updatingFollowUserId: number | null = null;
 
   errorMessage = '';
   infoMessage = '';
+  followersErrorMessage = '';
 
   constructor(
     private readonly router: Router,
-    private readonly blogsService: BlogsService
+    private readonly blogsService: BlogsService,
+    private readonly followersService: FollowersService,
+    private readonly usersService: UsersService
   ) {}
 
   ngOnInit(): void {
@@ -47,12 +59,18 @@ export class BlogsComponent implements OnInit {
     }
 
     this.currentUser = user;
+    this.loadUsers();
+    this.loadFollowerData();
     this.loadBlogs();
   }
 
   loadBlogs(): void {
+    if (!this.currentUser) {
+      return;
+    }
+
     this.isLoadingBlogs = true;
-    this.blogsService.getAllBlogs().subscribe({
+    this.blogsService.getFeed(this.currentUser.id).subscribe({
       next: (blogs) => {
         this.blogs = this.sortBlogs(blogs);
         this.errorMessage = '';
@@ -64,6 +82,92 @@ export class BlogsComponent implements OnInit {
         this.isLoadingBlogs = false;
       }
     });
+  }
+
+  loadFollowerData(): void {
+    if (!this.currentUser) {
+      return;
+    }
+
+    this.isLoadingFollowers = true;
+    this.followersErrorMessage = '';
+
+    this.followersService.getFollowing(this.currentUser.id).subscribe({
+      next: (response) => {
+        this.following = response.users;
+        this.isLoadingFollowers = false;
+      },
+      error: (error: HttpErrorResponse) => {
+        this.followersErrorMessage = error.error?.message ?? 'Neuspesno ucitavanje pracenih korisnika.';
+        this.following = [];
+        this.isLoadingFollowers = false;
+      }
+    });
+
+    this.followersService.getRecommendations(this.currentUser.id).subscribe({
+      next: (response) => {
+        this.recommendations = response.users;
+      },
+      error: () => {
+        this.recommendations = [];
+      }
+    });
+  }
+
+  followUser(user: UserAccount | FollowerUser): void {
+    if (!this.currentUser || this.updatingFollowUserId === user.id) {
+      return;
+    }
+
+    this.updatingFollowUserId = user.id;
+    this.followersErrorMessage = '';
+
+    this.followersService
+      .follow(this.currentUser.id, user.id, this.currentUser.username, user.username)
+      .subscribe({
+        next: () => {
+          this.updatingFollowUserId = null;
+          this.loadFollowerData();
+          this.loadBlogs();
+        },
+        error: (error: HttpErrorResponse) => {
+          this.followersErrorMessage = error.error?.message ?? 'Neuspesno pracenje korisnika.';
+          this.updatingFollowUserId = null;
+        }
+      });
+  }
+
+  unfollowUser(user: UserAccount | FollowerUser): void {
+    if (!this.currentUser || this.updatingFollowUserId === user.id) {
+      return;
+    }
+
+    this.updatingFollowUserId = user.id;
+    this.followersErrorMessage = '';
+
+    this.followersService.unfollow(this.currentUser.id, user.id).subscribe({
+      next: () => {
+        this.updatingFollowUserId = null;
+        this.loadFollowerData();
+        this.loadBlogs();
+      },
+      error: (error: HttpErrorResponse) => {
+        this.followersErrorMessage = error.error?.message ?? 'Neuspesno uklanjanje pracenja.';
+        this.updatingFollowUserId = null;
+      }
+    });
+  }
+
+  isFollowing(userId: number): boolean {
+    return this.following.some((user) => user.id === userId);
+  }
+
+  getVisibleUsers(): UserAccount[] {
+    if (!this.currentUser) {
+      return [];
+    }
+
+    return this.users.filter((user) => user.id !== this.currentUser?.id && !user.isBlocked);
   }
 
   createBlog(): void {
@@ -88,6 +192,7 @@ export class BlogsComponent implements OnInit {
         this.errorMessage = '';
         this.infoMessage = 'Blog je uspesno kreiran.';
         this.isSavingBlog = false;
+        this.loadBlogs();
       },
       error: (error: HttpErrorResponse) => {
         this.errorMessage = error.error?.message ?? 'Neuspesno kreiranje bloga.';
@@ -173,6 +278,17 @@ export class BlogsComponent implements OnInit {
     return [...blogs].sort((a, b) =>
       new Date(b.createdAtUtc).getTime() - new Date(a.createdAtUtc).getTime()
     );
+  }
+
+  private loadUsers(): void {
+    this.usersService.getAll().subscribe({
+      next: (users) => {
+        this.users = users;
+      },
+      error: () => {
+        this.users = [];
+      }
+    });
   }
 
   private readCurrentUser(): CurrentUser | null {
