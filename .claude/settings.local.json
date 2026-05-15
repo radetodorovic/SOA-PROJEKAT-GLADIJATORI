@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker exec stakeholders-db *)",
+      "Bash(npm install *)",
+      "Bash(npx ng *)",
+      "Bash(npx tsc *)",
+      "Bash(Remove-Item -Recurse -Force \"C:\\\\Users\\\\Zoran\\\\Desktop\\\\SOA PROJEKAT\\\\SOA-PROJEKAT-GLADIJATORI\\\\frontend7\\\\dist\" -ErrorAction SilentlyContinue)",
+      "Bash(Write-Host \"Ocisceno\")",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Zoran\\\\Desktop\\\\SOA PROJEKAT\\\\SOA-PROJEKAT-GLADIJATORI\" -Directory)",
+      "Bash(Select-Object Name)",
+      "Bash(docker compose *)"
+    ]
+  }
+}

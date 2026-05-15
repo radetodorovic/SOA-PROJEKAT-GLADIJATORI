@@ -12,6 +12,9 @@
         <a routerLink="/blogs" routerLinkActive="active">
           Blogovi
         </a>
+        <a *ngIf="!isAdmin()" routerLink="/tours" routerLinkActive="active">
+          Ture
+        </a>
         <a *ngIf="!isAdmin()" routerLink="/my-profile" routerLinkActive="active">
           Moj profil
         </a>

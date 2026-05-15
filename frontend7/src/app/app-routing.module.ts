@@ -6,6 +6,7 @@ import { MyProfileComponent } from './pages/my-profile/my-profile.component';
 import { HomeComponent } from './pages/home/home.component';
 import { BlogsComponent } from './pages/blogs/blogs.component';
 import { BlogDetailsComponent } from './pages/blog-details/blog-details.component';
+import { ToursComponent } from './pages/tours/tours.component';
 
 const routes: Routes = [
   { path: '', redirectTo: 'auth', pathMatch: 'full' },
@@ -13,6 +14,7 @@ const routes: Routes = [
   { path: 'home', component: HomeComponent },
   { path: 'blogs', component: BlogsComponent },
   { path: 'blogs/:id', component: BlogDetailsComponent },
+  { path: 'tours', component: ToursComponent },
   { path: 'admin/users', component: AdminUsersComponent },
   { path: 'my-profile', component: MyProfileComponent },
   { path: '**', redirectTo: 'auth' }
