@@ -9,7 +9,7 @@
 
     <ng-container *ngIf="blog as item">
       <h2>{{ item.title }}</h2>
-      <p class="meta">Autor {{ getAuthorLabel(item.authorId) }} | {{ formatDate(item.createdAtUtc) }}</p>
+      <p class="meta">{{ getAuthorLabel(item.authorId) }} | {{ formatDate(item.createdAtUtc) }}</p>
       <p class="format">Format opisa: {{ item.descriptionFormat }}</p>
 
       <section class="content-box likes-box">

@@ -170,6 +170,14 @@ export class BlogsComponent implements OnInit {
     return this.users.filter((user) => user.id !== this.currentUser?.id && !user.isBlocked);
   }
 
+  getAuthorName(authorId: number): string {
+    if (this.currentUser?.id === authorId) {
+      return this.currentUser.username;
+    }
+
+    return this.users.find((user) => user.id === authorId)?.username ?? 'Korisnik';
+  }
+
   createBlog(): void {
     if (!this.currentUser || this.isSavingBlog) {
       return;

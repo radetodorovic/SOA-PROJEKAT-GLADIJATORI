@@ -26,6 +26,7 @@ export class BlogDetailsComponent implements OnInit {
   currentUser: CurrentUser | null = null;
   blog: BlogPost | null = null;
   comments: BlogComment[] = [];
+  users: UserAccount[] = [];
   likesCount = 0;
   isLikedByCurrentUser = false;
 
@@ -45,9 +46,6 @@ export class BlogDetailsComponent implements OnInit {
   commentsErrorMessage = '';
   commentsInfoMessage = '';
 
-  private readonly authorLabels: Record<number, string> = {};
-  private readonly loadingAuthorIds = new Set<number>();
-
   constructor(
     private readonly route: ActivatedRoute,
     private readonly router: Router,
@@ -63,6 +61,7 @@ export class BlogDetailsComponent implements OnInit {
     }
 
     this.currentUser = user;
+    this.loadUsers();
 
     this.route.paramMap.subscribe((params) => {
       const blogId = Number(params.get('id'));
@@ -89,7 +88,11 @@ export class BlogDetailsComponent implements OnInit {
   }
 
   getAuthorLabel(userId: number): string {
-    return this.authorLabels[userId] ?? `Korisnik #${userId}`;
+    if (this.currentUser?.id === userId) {
+      return this.currentUser.username;
+    }
+
+    return this.users.find((user) => user.id === userId)?.username ?? '';
   }
 
   isEdited(comment: BlogComment): boolean {
@@ -154,7 +157,6 @@ export class BlogDetailsComponent implements OnInit {
         this.commentsErrorMessage = '';
         this.commentsInfoMessage = 'Komentar je uspesno dodat.';
         this.isSubmittingComment = false;
-        this.ensureAuthorLabel(comment.userId);
       },
       error: (error: HttpErrorResponse) => {
         this.commentsErrorMessage = error.error?.message ?? 'Neuspesno kreiranje komentara.';
@@ -267,7 +269,6 @@ export class BlogDetailsComponent implements OnInit {
         this.blog = blog;
         this.errorMessage = '';
         this.isLoading = false;
-        this.ensureAuthorLabel(blog.authorId);
       },
       error: (error: HttpErrorResponse) => {
         this.errorMessage = error.error?.message ?? 'Neuspesno ucitavanje bloga.';
@@ -288,9 +289,6 @@ export class BlogDetailsComponent implements OnInit {
       next: (comments) => {
         this.comments = comments;
         this.isLoadingComments = false;
-
-        const uniqueAuthorIds = Array.from(new Set(comments.map((comment) => comment.userId)));
-        uniqueAuthorIds.forEach((authorId) => this.ensureAuthorLabel(authorId));
       },
       error: (error: HttpErrorResponse) => {
         this.commentsErrorMessage = error.error?.message ?? 'Neuspesno ucitavanje komentara.';
@@ -328,30 +326,15 @@ export class BlogDetailsComponent implements OnInit {
     });
   }
 
-  private ensureAuthorLabel(userId: number): void {
-    if (this.authorLabels[userId] || this.loadingAuthorIds.has(userId)) {
-      return;
-    }
-
-    this.loadingAuthorIds.add(userId);
-    this.usersService.getUserById(userId).subscribe({
-      next: (user) => {
-        this.authorLabels[userId] = this.buildAuthorLabel(user);
-        this.loadingAuthorIds.delete(userId);
+  private loadUsers(): void {
+    this.usersService.getAll().subscribe({
+      next: (users) => {
+        this.users = users;
       },
       error: () => {
-        this.authorLabels[userId] = `Korisnik #${userId}`;
-        this.loadingAuthorIds.delete(userId);
+        this.users = [];
       }
     });
-  }
-
-  private buildAuthorLabel(user: UserAccount): string {
-    if (user.username?.trim()) {
-      return `${user.username} (#${user.id})`;
-    }
-
-    return `Korisnik #${user.id}`;
   }
 
   private readCurrentUser(): CurrentUser | null {

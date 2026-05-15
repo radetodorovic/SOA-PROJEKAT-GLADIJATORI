@@ -28,7 +28,7 @@
           <h4>Svi korisnici</h4>
           <p *ngIf="getVisibleUsers().length === 0">Nema dostupnih korisnika.</p>
           <div class="user-row" *ngFor="let user of getVisibleUsers()">
-            <span>{{ user.username }} (#{{ user.id }})</span>
+            <span>{{ user.username }}</span>
             <button
               type="button"
               [disabled]="updatingFollowUserId === user.id"
@@ -44,7 +44,7 @@
           <p *ngIf="isLoadingFollowers">Ucitavanje...</p>
           <p *ngIf="!isLoadingFollowers && following.length === 0">Ne pratis nijednog korisnika.</p>
           <div class="user-row" *ngFor="let user of following">
-            <span>{{ user.username }} (#{{ user.id }})</span>
+            <span>{{ user.username }}</span>
             <button type="button" [disabled]="updatingFollowUserId === user.id" (click)="unfollowUser(user)">
               Otprati
             </button>
@@ -55,7 +55,7 @@
           <h4>Preporuke</h4>
           <p *ngIf="recommendations.length === 0">Trenutno nema preporuka.</p>
           <div class="user-row" *ngFor="let user of recommendations">
-            <span>{{ user.username }} (#{{ user.id }})</span>
+            <span>{{ user.username }}</span>
             <button type="button" [disabled]="updatingFollowUserId === user.id" (click)="followUser(user)">
               Zaprati
             </button>
@@ -105,7 +105,7 @@
       <div class="blog-list" *ngIf="!isLoadingBlogs && blogs.length > 0">
         <article class="blog-item" *ngFor="let blog of blogs">
           <h4>{{ blog.title }}</h4>
-          <p class="meta">Autor #{{ blog.authorId }} | {{ formatDate(blog.createdAtUtc) }}</p>
+          <p class="meta">{{ getAuthorName(blog.authorId) }} | {{ formatDate(blog.createdAtUtc) }}</p>
           <p class="meta" *ngIf="blog.likesCount !== undefined">Lajkovi: {{ blog.likesCount }}</p>
           <p class="preview">{{ blog.description }}</p>
           <button type="button" (click)="openBlog(blog.id)">Prikazi detalje</button>
