@@ -1,0 +1,354 @@
+<section class="tours-layout">
+  <article class="tours-card">
+    <div class="tours-header">
+      <div>
+        <p class="section-label">GLADIJATORI</p>
+        <h2>Ture</h2>
+        <p>Pregled i upravljanje turama, kljucnim tackama i recenzijama.</p>
+      </div>
+    </div>
+
+    <p class="state success" *ngIf="successMessage">{{ successMessage }}</p>
+    <p class="state error" *ngIf="errorMessage">{{ errorMessage }}</p>
+
+    <!-- ── GUIDE: Create tour ─────────────────────────────────────────────── -->
+    <section class="box" *ngIf="isGuide()">
+      <h3>Kreiraj novu turu</h3>
+      <label>
+        Naziv
+        <input [(ngModel)]="newTourName" type="text" placeholder="Naziv ture" maxlength="200" />
+      </label>
+      <label>
+        Opis
+        <textarea [(ngModel)]="newTourDesc" rows="3" placeholder="Kratki opis ture"></textarea>
+      </label>
+      <div class="coord-grid">
+        <label>
+          Cijena (€)
+          <input [(ngModel)]="newTourPrice" type="number" min="0" />
+        </label>
+        <label>
+          Tezina
+          <select [(ngModel)]="newTourDifficulty" style="padding:10px 12px;border:1px solid #cab79b;border-radius:10px;background:rgba(255,253,250,.94);">
+            <option *ngFor="let d of difficulties" [value]="d.value">{{ d.label }}</option>
+          </select>
+        </label>
+      </div>
+      <label>Tagovi (opciono)</label>
+      <div class="tag-input-row">
+        <input
+          [(ngModel)]="newTourTagInput"
+          type="text"
+          placeholder="Npr. planine"
+          maxlength="30"
+          (keydown.enter)="addNewTourTag(); $event.preventDefault()"
+        />
+        <button type="button" (click)="addNewTourTag()">+ Dodaj</button>
+      </div>
+      <div class="tag-list" *ngIf="newTourTags.length > 0">
+        <span class="tag-chip" *ngFor="let tag of newTourTags">
+          {{ tag }}
+          <button type="button" (click)="removeNewTourTag(tag)">×</button>
+        </span>
+      </div>
+      <div class="actions">
+        <button type="button" [disabled]="isCreatingTour" (click)="createTour()">
+          {{ isCreatingTour ? 'Kreiranje...' : 'Kreiraj turu' }}
+        </button>
+      </div>
+    </section>
+
+    <!-- ── GUIDE: My tours ──────────────────────────────────────────────── -->
+    <section class="box" *ngIf="isGuide()">
+      <div class="section-row">
+        <h3>Moje ture</h3>
+        <button type="button" [disabled]="isLoadingTours" (click)="loadMyTours()">Osvezi</button>
+      </div>
+      <p *ngIf="isLoadingTours" class="meta">Ucitavanje...</p>
+      <p *ngIf="!isLoadingTours && myTours.length === 0" class="meta">Nemate kreiranih tura.</p>
+      <div class="tour-list" *ngIf="myTours.length > 0">
+        <div
+          class="tour-item"
+          [class.selected]="selectedTour?.id === tour.id"
+          *ngFor="let tour of myTours"
+          (click)="selectTour(tour)"
+        >
+          <div class="tour-row">
+            <strong>{{ tour.name }}</strong>
+            <span class="price-tag">{{ tour.price | currency:'EUR':'symbol':'1.0-2' }}</span>
+          </div>
+          <div class="tour-meta-row">
+            <span class="badge" [class.draft]="tour.status === 'DRAFT'" [class.published]="tour.status === 'PUBLISHED'">
+              {{ tour.status }}
+            </span>
+            <span class="meta">{{ getDifficultyLabel(tour.difficulty) }}</span>
+            <span class="meta">{{ tour.keyPoints.length }} tackica</span>
+          </div>
+          <div class="tag-list" *ngIf="tour.tags && tour.tags.length > 0" style="margin-top:6px;">
+            <span class="tag-chip-view" *ngFor="let tag of tour.tags">{{ tag }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── TOURIST: Published tours ──────────────────────────────────────── -->
+    <section class="box" *ngIf="!isGuide()">
+      <div class="section-row">
+        <h3>Dostupne ture</h3>
+        <button type="button" [disabled]="isLoadingTours" (click)="loadPublishedTours()">Osvezi</button>
+      </div>
+      <p *ngIf="isLoadingTours" class="meta">Ucitavanje...</p>
+      <p *ngIf="!isLoadingTours && publishedTours.length === 0" class="meta">Trenutno nema dostupnih tura.</p>
+      <div class="tour-list" *ngIf="publishedTours.length > 0">
+        <div
+          class="tour-item"
+          [class.selected]="selectedTour?.id === tour.id"
+          *ngFor="let tour of publishedTours"
+          (click)="selectTour(tour)"
+        >
+          <div class="tour-row">
+            <strong>{{ tour.name }}</strong>
+            <span class="price-tag">{{ tour.price | currency:'EUR':'symbol':'1.0-2' }}</span>
+          </div>
+          <div class="tour-meta-row">
+            <span class="badge published">OBJAVLJENA</span>
+            <span class="meta">{{ getDifficultyLabel(tour.difficulty) }}</span>
+            <span class="meta">{{ tour.keyPoints.length }} tackica</span>
+          </div>
+          <div class="tag-list" *ngIf="tour.tags && tour.tags.length > 0" style="margin-top:6px;">
+            <span class="tag-chip-view" *ngFor="let tag of tour.tags">{{ tag }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SELECTED TOUR DETAILS ─────────────────────────────────────────── -->
+    <ng-container *ngIf="selectedTour">
+
+      <section class="box tour-info-box">
+        <div class="tour-info-header">
+          <div style="flex:1">
+            <h3>{{ selectedTour.name }}</h3>
+            <p class="meta">{{ selectedTour.description }}</p>
+            <p class="meta">Kreirano: {{ formatDate(selectedTour.createdAt) }}</p>
+          </div>
+          <div class="tour-info-right">
+            <span class="price-tag-large">{{ selectedTour.price | currency:'EUR':'symbol':'1.0-2' }}</span>
+            <span class="badge" [class.draft]="selectedTour.status === 'DRAFT'" [class.published]="selectedTour.status === 'PUBLISHED'">
+              {{ selectedTour.status }}
+            </span>
+            <span class="meta">{{ getDifficultyLabel(selectedTour.difficulty) }}</span>
+          </div>
+        </div>
+        <div class="tag-list" *ngIf="selectedTour.tags && selectedTour.tags.length > 0">
+          <span class="tag-chip-view" *ngFor="let tag of selectedTour.tags">{{ tag }}</span>
+        </div>
+
+        <!-- Guide: Edit + publish -->
+        <div class="guide-controls" *ngIf="isAuthorOfSelected()">
+          <h4>Uredi turu</h4>
+          <div class="price-edit-row">
+            <label style="flex:1">
+              Cijena (€)
+              <input [(ngModel)]="editTourPrice" type="number" min="0" />
+            </label>
+            <label style="flex:1">
+              Tezina
+              <select [(ngModel)]="editTourDifficulty" style="padding:10px 12px;border:1px solid #cab79b;border-radius:10px;background:rgba(255,253,250,.94);">
+                <option *ngFor="let d of difficulties" [value]="d.value">{{ d.label }}</option>
+              </select>
+            </label>
+          </div>
+          <label>Tagovi</label>
+          <div class="tag-input-row">
+            <input
+              [(ngModel)]="editTourTagInput"
+              type="text"
+              placeholder="Npr. planine"
+              maxlength="30"
+              (keydown.enter)="addEditTag(); $event.preventDefault()"
+            />
+            <button type="button" (click)="addEditTag()">+ Dodaj</button>
+          </div>
+          <div class="tag-list" *ngIf="editTourTags.length > 0" style="margin-bottom:10px;">
+            <span class="tag-chip" *ngFor="let tag of editTourTags">
+              {{ tag }}
+              <button type="button" (click)="removeEditTag(tag)">×</button>
+            </span>
+          </div>
+          <div class="actions">
+            <button type="button" class="publish-btn" [disabled]="isUpdatingTour || selectedTour.status === 'PUBLISHED'" (click)="publishTour()">
+              {{ selectedTour.status === 'PUBLISHED' ? 'Objavljena' : 'Objavi turu' }}
+            </button>
+            <button type="button" [disabled]="isUpdatingTour" (click)="updateTourMeta()">
+              {{ isUpdatingTour ? 'Cuvanje...' : 'Sacuvaj izmjene' }}
+            </button>
+          </div>
+          <p class="published-notice" *ngIf="selectedTour.status === 'PUBLISHED'">Tura je objavljena i vidljiva turistima.</p>
+        </div>
+      </section>
+
+      <!-- ── MAP ──────────────────────────────────────────────────────────── -->
+      <section class="box map-box">
+        <div class="section-row">
+          <div>
+            <h3>Mapa ture</h3>
+            <p class="map-legend">
+              <span class="kp-dot">1</span> Kljucne tacke &nbsp;
+              <span class="tourist-dot">★</span> Tvoja pozicija
+              <span *ngIf="isGuide()"> &nbsp;— klikni na mapu za koordinate kljucne tacke</span>
+              <span *ngIf="!isGuide()"> &nbsp;— klikni na mapu za svoju poziciju</span>
+            </p>
+          </div>
+        </div>
+        <div class="map-container" id="tour-map"></div>
+      </section>
+
+      <!-- ── GUIDE: Key points ────────────────────────────────────────────── -->
+      <section class="box" *ngIf="isAuthorOfSelected()">
+        <h3>Kljucne tacke</h3>
+        <div class="kp-list" *ngIf="selectedTour.keyPoints.length > 0">
+          <div class="kp-item" *ngFor="let kp of selectedTour.keyPoints; let i = index">
+            <div class="kp-header">
+              <span class="kp-badge">{{ i + 1 }}</span>
+              <div class="kp-info">
+                <strong>{{ kp.name }}</strong>
+                <span class="meta" *ngIf="kp.description">{{ kp.description }}</span>
+                <span class="meta">{{ kp.latitude }}, {{ kp.longitude }}</span>
+              </div>
+              <div class="kp-actions">
+                <button type="button" (click)="startEditKeyPoint(kp)">Uredi</button>
+                <button type="button" class="danger-btn" (click)="deleteKeyPoint(kp.id)">Obrisi</button>
+              </div>
+            </div>
+            <img *ngIf="kp.imageUrl" [src]="kp.imageUrl" alt="Slika tacke" class="kp-img" />
+          </div>
+        </div>
+        <p *ngIf="selectedTour.keyPoints.length === 0" class="meta">Nema kljucnih tacaka. Dodajte prvu ispod.</p>
+
+        <div class="kp-form">
+          <h4>{{ editingKeyPointId ? 'Uredi kljucnu tacku' : 'Dodaj kljucnu tacku' }}</h4>
+          <label>
+            Naziv
+            <input [(ngModel)]="kpName" type="text" placeholder="Npr. Polaziste" maxlength="200" />
+          </label>
+          <label>
+            Opis (opciono)
+            <input [(ngModel)]="kpDesc" type="text" placeholder="Kratki opis tacke" />
+          </label>
+          <div class="coord-grid">
+            <label>
+              Geografska sirina
+              <input [(ngModel)]="kpLat" type="number" step="any" placeholder="Npr. 44.012345" />
+            </label>
+            <label>
+              Geografska duzina
+              <input [(ngModel)]="kpLng" type="number" step="any" placeholder="Npr. 21.005678" />
+            </label>
+            <label>
+              Redosljed
+              <input [(ngModel)]="kpOrder" type="number" min="0" />
+            </label>
+          </div>
+          <label>
+            Slika kljucne tacke (opciono)
+            <input type="file" accept="image/*" (change)="onKpImageSelected($event)" style="padding:6px 0;border:none;background:transparent;" />
+          </label>
+          <div *ngIf="kpImagePreview" style="margin-bottom:10px;">
+            <img [src]="kpImagePreview" alt="Preview" class="kp-img" />
+          </div>
+          <div class="actions">
+            <button type="button" *ngIf="editingKeyPointId" (click)="cancelEditKeyPoint()">Otkazi</button>
+            <button type="button" [disabled]="isSavingKp" (click)="saveKeyPoint()">
+              {{ isSavingKp ? 'Cuvanje...' : (editingKeyPointId ? 'Sacuvaj izmjenu' : 'Dodaj tacku') }}
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── REVIEWS ──────────────────────────────────────────────────────── -->
+      <section class="box">
+        <h3>Recenzije</h3>
+        <div class="review-list" *ngIf="reviews.length > 0">
+          <div class="review-item" *ngFor="let review of reviews">
+            <div class="review-header">
+              <strong>{{ review.username }}</strong>
+              <span class="stars">{{ getStars(review.rating) }}</span>
+            </div>
+            <p class="meta" *ngIf="review.visitDate">Datum posjete: {{ formatShortDate(review.visitDate) }}</p>
+            <p *ngIf="review.comment">{{ review.comment }}</p>
+            <p class="meta" style="font-size:12px;color:#aaa;">{{ formatDate(review.createdAt) }}</p>
+            <div *ngIf="review.imageUrls && review.imageUrls.length > 0" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
+              <img *ngFor="let url of review.imageUrls" [src]="url" alt="Slika recenzije" class="kp-img" />
+            </div>
+          </div>
+        </div>
+        <p *ngIf="reviews.length === 0" class="meta">Nema recenzija za ovu turu.</p>
+
+        <!-- Tourist: Add review -->
+        <div class="review-form" *ngIf="!isGuide()">
+          <h4>Dodaj recenziju</h4>
+          <label>
+            Ocjena (1-5)
+            <input [(ngModel)]="reviewRating" type="number" min="1" max="5" />
+          </label>
+          <label>
+            Komentar
+            <textarea [(ngModel)]="reviewComment" rows="3" placeholder="Vase misljenje o turi..."></textarea>
+          </label>
+          <label>
+            Datum posjete (opciono)
+            <input [(ngModel)]="reviewVisitDate" type="date" />
+          </label>
+          <label>
+            Slike (opciono, vise slika odjednom)
+            <input type="file" accept="image/*" multiple (change)="onReviewImagesSelected($event)" style="padding:6px 0;border:none;background:transparent;" />
+          </label>
+          <div *ngIf="reviewImageUrls.length > 0" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+            <div *ngFor="let url of reviewImageUrls; let i = index; trackBy: trackByIndex" style="position:relative;">
+              <img [src]="url" alt="Preview" class="kp-img" />
+              <button
+                type="button"
+                class="danger-btn"
+                (click)="removeReviewImage(i)"
+                style="position:absolute;top:4px;right:4px;padding:2px 7px;font-size:13px;"
+              >×</button>
+            </div>
+          </div>
+          <div class="actions">
+            <button type="button" [disabled]="isAddingReview" (click)="addReview()">
+              {{ isAddingReview ? 'Objavljivanje...' : 'Objavi recenziju' }}
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── POSITION SIMULATOR ────────────────────────────────────────────── -->
+      <section class="box simulator-box" *ngIf="!isGuide()">
+        <h3>Simulator pozicije</h3>
+        <p class="meta">Azuriraj svoju lokaciju (ili klikni na mapu gore).</p>
+        <div class="coord-grid">
+          <label>
+            Geografska sirina
+            <input [(ngModel)]="posLat" type="number" step="any" placeholder="Npr. 44.012345" />
+          </label>
+          <label>
+            Geografska duzina
+            <input [(ngModel)]="posLng" type="number" step="any" placeholder="Npr. 21.005678" />
+          </label>
+        </div>
+        <div class="actions">
+          <button type="button" [disabled]="isUpdatingPosition" (click)="updatePosition()">
+            {{ isUpdatingPosition ? 'Azuriranje...' : 'Azuriraj poziciju' }}
+          </button>
+        </div>
+        <div class="position-display" *ngIf="currentPosition">
+          <p><strong>Trenutna pozicija:</strong></p>
+          <p>Sirina: {{ currentPosition.latitude }}, Duzina: {{ currentPosition.longitude }}</p>
+          <p class="meta">Azurirano: {{ formatDate(currentPosition.updatedAt) }}</p>
+        </div>
+      </section>
+
+    </ng-container>
+  </article>
+</section>

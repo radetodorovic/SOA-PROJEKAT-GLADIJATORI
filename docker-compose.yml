@@ -114,11 +114,45 @@ services:
     networks:
       - soa-network
 
+  mongodb:
+    image: mongo:7
+    container_name: mongodb
+    environment:
+      MONGO_INITDB_DATABASE: tour_db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping').ok", "--quiet"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - soa-network
+
+  tour-service:
+    build:
+      context: ./bekend6/TourService
+    image: tour-service
+    container_name: tour-service
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/tour_db
+    ports:
+      - "5011:8080"
+    restart: on-failure
+    networks:
+      - soa-network
+
 volumes:
   stakeholders-db-data:
   blog-db-data:
   neo4j-data:
   neo4j-logs:
+  mongodb-data:
 
 networks:
   soa-network:
