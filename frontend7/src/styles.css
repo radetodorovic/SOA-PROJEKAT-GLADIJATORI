@@ -1,9 +1,6 @@
 :root {
   color-scheme: light;
   font-family: Georgia, "Times New Roman", serif;
-  background:
-    radial-gradient(circle at top, rgba(214, 186, 140, 0.35), transparent 30%),
-    linear-gradient(180deg, #f6f0e8 0%, #efe3d3 100%);
   color: #231f1c;
 }
 
@@ -19,10 +16,23 @@ body {
 
 body {
   min-height: 100vh;
+  background:
+    linear-gradient(rgba(250, 244, 235, 0.84), rgba(239, 226, 209, 0.92)),
+    url("assets/gladiator-arena-bg.png") center top / cover fixed no-repeat;
 }
 
 button,
 input,
 select {
   font: inherit;
+}
+
+button,
+a {
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+button:hover,
+a:hover {
+  transform: translateY(-1px);
 }

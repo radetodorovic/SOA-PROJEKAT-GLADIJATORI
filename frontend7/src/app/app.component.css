@@ -7,9 +7,11 @@
   top: 0;
   z-index: 10;
   padding: 14px 16px;
-  border-bottom: 1px solid rgba(69, 52, 30, 0.15);
-  background: rgba(255, 250, 244, 0.96);
-  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(124, 83, 34, 0.28);
+  background:
+    linear-gradient(90deg, rgba(72, 47, 23, 0.06), rgba(255, 250, 244, 0.94), rgba(72, 47, 23, 0.06));
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 24px rgba(64, 43, 22, 0.08);
 }
 
 .nav-content {
@@ -22,11 +24,12 @@
 }
 
 .brand {
-  color: #7d5526;
-  font-size: 1.1rem;
+  color: #6f4518;
+  font-size: 1.18rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
   text-decoration: none;
+  text-shadow: 0 1px 0 #fff8eb;
 }
 
 .nav-links {
@@ -39,24 +42,37 @@
 .nav-links a {
   padding: 8px 12px;
   border-radius: 999px;
-  color: #6a583f;
+  color: #5f4a2f;
   text-decoration: none;
+  border: 1px solid transparent;
 }
 
 .nav-links a.active,
 .brand.active {
-  background: rgba(183, 138, 82, 0.16);
+  background: rgba(183, 138, 82, 0.18);
+  border-color: rgba(183, 138, 82, 0.22);
   color: #5c3f1f;
+}
+
+.nav-links a:hover {
+  background: rgba(255, 250, 242, 0.72);
+  border-color: rgba(183, 138, 82, 0.28);
 }
 
 .logout-btn {
   border: 1px solid #b78a52;
-  background: #fffaf2;
-  color: #7d5526;
+  background: linear-gradient(180deg, #fff8eb, #f5e4c8);
+  color: #6f4518;
   border-radius: 10px;
   padding: 8px 12px;
   font-weight: 600;
   cursor: pointer;
+}
+
+.logout-btn:hover {
+  border-color: #8f5f25;
+  background: #7d5526;
+  color: #fff8eb;
 }
 
 .app-main {
