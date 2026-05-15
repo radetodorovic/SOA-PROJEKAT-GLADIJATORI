@@ -12,6 +12,58 @@
     <p class="state success" *ngIf="infoMessage">{{ infoMessage }}</p>
     <p class="state error" *ngIf="errorMessage">{{ errorMessage }}</p>
 
+    <section class="box followers-box">
+      <div class="section-row">
+        <div>
+          <h3>Pracenje korisnika</h3>
+          <p class="meta">Feed prikazuje tvoje blogove i blogove autora koje pratis.</p>
+        </div>
+        <button type="button" [disabled]="isLoadingFollowers" (click)="loadFollowerData()">Osvezi pracenje</button>
+      </div>
+
+      <p class="state error" *ngIf="followersErrorMessage">{{ followersErrorMessage }}</p>
+
+      <div class="follow-grid">
+        <article class="follow-panel">
+          <h4>Svi korisnici</h4>
+          <p *ngIf="getVisibleUsers().length === 0">Nema dostupnih korisnika.</p>
+          <div class="user-row" *ngFor="let user of getVisibleUsers()">
+            <span>{{ user.username }} (#{{ user.id }})</span>
+            <button
+              type="button"
+              [disabled]="updatingFollowUserId === user.id"
+              (click)="isFollowing(user.id) ? unfollowUser(user) : followUser(user)"
+            >
+              {{ isFollowing(user.id) ? 'Otprati' : 'Zaprati' }}
+            </button>
+          </div>
+        </article>
+
+        <article class="follow-panel">
+          <h4>Pratim</h4>
+          <p *ngIf="isLoadingFollowers">Ucitavanje...</p>
+          <p *ngIf="!isLoadingFollowers && following.length === 0">Ne pratis nijednog korisnika.</p>
+          <div class="user-row" *ngFor="let user of following">
+            <span>{{ user.username }} (#{{ user.id }})</span>
+            <button type="button" [disabled]="updatingFollowUserId === user.id" (click)="unfollowUser(user)">
+              Otprati
+            </button>
+          </div>
+        </article>
+
+        <article class="follow-panel">
+          <h4>Preporuke</h4>
+          <p *ngIf="recommendations.length === 0">Trenutno nema preporuka.</p>
+          <div class="user-row" *ngFor="let user of recommendations">
+            <span>{{ user.username }} (#{{ user.id }})</span>
+            <button type="button" [disabled]="updatingFollowUserId === user.id" (click)="followUser(user)">
+              Zaprati
+            </button>
+          </div>
+        </article>
+      </div>
+    </section>
+
     <section class="box">
       <h3>Novi blog</h3>
       <label>
@@ -46,9 +98,9 @@
     </section>
 
     <section class="box">
-      <h3>Svi blogovi</h3>
+      <h3>Blog feed</h3>
       <p *ngIf="isLoadingBlogs">Ucitavanje blogova...</p>
-      <p *ngIf="!isLoadingBlogs && blogs.length === 0">Trenutno nema blogova.</p>
+      <p *ngIf="!isLoadingBlogs && blogs.length === 0">Trenutno nema blogova autora koje pratis.</p>
 
       <div class="blog-list" *ngIf="!isLoadingBlogs && blogs.length > 0">
         <article class="blog-item" *ngFor="let blog of blogs">

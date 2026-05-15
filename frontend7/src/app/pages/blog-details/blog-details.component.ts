@@ -257,8 +257,12 @@ export class BlogDetailsComponent implements OnInit {
   }
 
   private loadBlog(blogId: number): void {
+    if (!this.currentUser) {
+      return;
+    }
+
     this.isLoading = true;
-    this.blogsService.getBlogById(blogId).subscribe({
+    this.blogsService.getBlogById(blogId, this.currentUser.id).subscribe({
       next: (blog) => {
         this.blog = blog;
         this.errorMessage = '';

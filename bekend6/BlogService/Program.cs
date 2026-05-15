@@ -18,6 +18,11 @@ builder.Services.AddScoped<IBlogCommentRepository, BlogCommentRepository>();
 builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<IBlogLikeRepository, BlogLikeRepository>();
 builder.Services.AddScoped<ILikeService, LikeService>();
+builder.Services.AddHttpClient<IFollowerClient, FollowerClient>(client =>
+{
+    var baseUrl = builder.Configuration["FollowerService:BaseUrl"] ?? "http://localhost:5010";
+    client.BaseAddress = new Uri(baseUrl);
+});
 
 builder.Services.AddCors(options =>
 {

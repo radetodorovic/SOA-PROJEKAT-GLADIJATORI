@@ -20,8 +20,20 @@ export class BlogsService {
     return this.http.get<BlogPost[]>(this.blogsUrl);
   }
 
-  getBlogById(blogId: number): Observable<BlogPost> {
-    return this.http.get<BlogPost>(`${this.blogsUrl}/${blogId}`);
+  getFeed(userId: number): Observable<BlogPost[]> {
+    return this.http.get<BlogPost[]>(`${this.blogsUrl}/feed`, {
+      headers: {
+        'X-User-Id': String(userId)
+      }
+    });
+  }
+
+  getBlogById(blogId: number, userId: number): Observable<BlogPost> {
+    return this.http.get<BlogPost>(`${this.blogsUrl}/${blogId}`, {
+      headers: {
+        'X-User-Id': String(userId)
+      }
+    });
   }
 
   createBlog(userId: number, payload: CreateBlogRequest): Observable<BlogPost> {

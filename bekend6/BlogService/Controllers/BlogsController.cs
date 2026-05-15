@@ -16,13 +16,39 @@ public class BlogsController(IBlogService blogService) : ControllerBase
         return Ok(blogs);
     }
 
+    [HttpGet("feed")]
+    [ProducesResponseType(typeof(IReadOnlyCollection<BlogResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status503ServiceUnavailable)]
+    public async Task<IActionResult> GetFeed(
+        [FromHeader(Name = "X-User-Id")] int userId,
+        CancellationToken cancellationToken)
+    {
+        var result = await blogService.GetFeedAsync(userId, cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            return StatusCode(result.StatusCode, new ErrorResponseDto
+            {
+                Message = result.Message
+            });
+        }
+
+        return Ok(result.Data);
+    }
+
     [HttpGet("{id:int}")]
     [ProducesResponseType(typeof(BlogResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetBlogById(int id, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetBlogById(
+        int id,
+        [FromHeader(Name = "X-User-Id")] int userId,
+        CancellationToken cancellationToken)
     {
-        var result = await blogService.GetBlogByIdAsync(id, cancellationToken);
+        var result = await blogService.GetBlogByIdAsync(id, userId, cancellationToken);
 
         if (!result.IsSuccess)
         {

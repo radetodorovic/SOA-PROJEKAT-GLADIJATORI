@@ -17,6 +17,20 @@ public class BlogRepository(BlogDbContext dbContext) : IBlogRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyCollection<Blog>> GetByAuthorIdsAsync(
+        IReadOnlyCollection<int> authorIds,
+        CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Blogs
+            .AsNoTracking()
+            .Include(blog => blog.Images.OrderBy(image => image.OrderIndex))
+            .Include(blog => blog.Comments.OrderByDescending(comment => comment.CreatedAtUtc))
+            .Include(blog => blog.Likes)
+            .Where(blog => authorIds.Contains(blog.AuthorId))
+            .OrderByDescending(blog => blog.CreatedAtUtc)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<Blog?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         return await dbContext.Blogs
