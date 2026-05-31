@@ -38,8 +38,10 @@ public class TourController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<TourResponseDto> getTourById(@PathVariable String id) {
-        return ResponseEntity.ok(tourService.getTourById(id));
+    public ResponseEntity<TourResponseDto> getTourById(
+            @PathVariable String id,
+            @RequestHeader(value = "X-User-Id", defaultValue = "0") int userId) {
+        return ResponseEntity.ok(tourService.getTourById(id, userId));
     }
 
     @PutMapping("/{id}")
@@ -48,6 +50,77 @@ public class TourController {
             @RequestHeader(value = "X-User-Id", defaultValue = "0") int userId,
             @RequestBody UpdateTourDto dto) {
         return ResponseEntity.ok(tourService.updateTour(id, userId, dto));
+    }
+
+    // ── Shopping cart / purchases ─────────────────────────────────────────────
+
+    @GetMapping("/cart")
+    public ResponseEntity<ShoppingCartResponseDto> getCart(
+            @RequestHeader(value = "X-User-Id", defaultValue = "0") int userId) {
+        return ResponseEntity.ok(tourService.getCart(userId));
+    }
+
+    @PostMapping("/cart/items/{tourId}")
+    public ResponseEntity<ShoppingCartResponseDto> addToCart(
+            @PathVariable String tourId,
+            @RequestHeader(value = "X-User-Id", defaultValue = "0") int userId) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(tourService.addToCart(userId, tourId));
+    }
+
+    @DeleteMapping("/cart/items/{tourId}")
+    public ResponseEntity<ShoppingCartResponseDto> removeFromCart(
+            @PathVariable String tourId,
+            @RequestHeader(value = "X-User-Id", defaultValue = "0") int userId) {
+        return ResponseEntity.ok(tourService.removeFromCart(userId, tourId));
+    }
+
+    @PostMapping("/cart/checkout")
+    public ResponseEntity<List<TourPurchaseTokenResponseDto>> checkout(
+            @RequestHeader(value = "X-User-Id", defaultValue = "0") int userId) {
+        return ResponseEntity.ok(tourService.checkout(userId));
+    }
+
+    @GetMapping("/purchases")
+    public ResponseEntity<List<TourPurchaseTokenResponseDto>> getPurchaseTokens(
+            @RequestHeader(value = "X-User-Id", defaultValue = "0") int userId) {
+        return ResponseEntity.ok(tourService.getPurchaseTokens(userId));
+    }
+
+    // ── Tour execution ────────────────────────────────────────────────────────
+
+    @PostMapping("/{tourId}/execution/start")
+    public ResponseEntity<TourExecutionResponseDto> startExecution(
+            @PathVariable String tourId,
+            @RequestHeader(value = "X-User-Id", defaultValue = "0") int userId) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(tourService.startTourExecution(tourId, userId));
+    }
+
+    @GetMapping("/{tourId}/execution/active")
+    public ResponseEntity<TourExecutionResponseDto> getActiveExecution(
+            @PathVariable String tourId,
+            @RequestHeader(value = "X-User-Id", defaultValue = "0") int userId) {
+        return ResponseEntity.ok(tourService.getActiveExecution(tourId, userId));
+    }
+
+    @PostMapping("/{tourId}/execution/check")
+    public ResponseEntity<TourExecutionResponseDto> checkKeyPointProximity(
+            @PathVariable String tourId,
+            @RequestHeader(value = "X-User-Id", defaultValue = "0") int userId) {
+        return ResponseEntity.ok(tourService.checkKeyPointProximity(tourId, userId));
+    }
+
+    @PostMapping("/{tourId}/execution/complete")
+    public ResponseEntity<TourExecutionResponseDto> completeExecution(
+            @PathVariable String tourId,
+            @RequestHeader(value = "X-User-Id", defaultValue = "0") int userId) {
+        return ResponseEntity.ok(tourService.completeTourExecution(tourId, userId));
+    }
+
+    @PostMapping("/{tourId}/execution/abandon")
+    public ResponseEntity<TourExecutionResponseDto> abandonExecution(
+            @PathVariable String tourId,
+            @RequestHeader(value = "X-User-Id", defaultValue = "0") int userId) {
+        return ResponseEntity.ok(tourService.abandonTourExecution(tourId, userId));
     }
 
     // ── Key points ────────────────────────────────────────────────────────────

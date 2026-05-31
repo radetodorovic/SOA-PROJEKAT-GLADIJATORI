@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
-import { Tour, Review, TouristPosition, KeyPointRequest } from '../models/tour';
+import { Tour, Review, TouristPosition, KeyPointRequest, ShoppingCart, TourPurchaseToken, TourExecution } from '../models/tour';
 
 export interface UpdateTourRequest {
   name?: string;
@@ -10,12 +11,14 @@ export interface UpdateTourRequest {
   price?: number;
   difficulty?: string;
   status?: string;
+  transportDurations?: Record<string, number>;
   tags?: string[];
 }
 
 @Injectable({ providedIn: 'root' })
 export class ToursService {
   private readonly toursUrl = `${environment.tourApiBaseUrl}/tours`;
+  private readonly sagasUrl = `${environment.tourApiBaseUrl}/sagas`;
 
   constructor(private readonly http: HttpClient) {}
 
@@ -33,6 +36,12 @@ export class ToursService {
 
   getPublishedTours(): Observable<Tour[]> {
     return this.http.get<Tour[]>(`${this.toursUrl}/published`);
+  }
+
+  getTourById(tourId: string, userId: number): Observable<Tour> {
+    return this.http.get<Tour>(`${this.toursUrl}/${tourId}`, {
+      headers: { 'X-User-Id': String(userId) }
+    });
   }
 
   getToursByAuthor(authorId: number): Observable<Tour[]> {
@@ -84,5 +93,65 @@ export class ToursService {
 
   getPosition(userId: number): Observable<TouristPosition> {
     return this.http.get<TouristPosition>(`${this.toursUrl}/position/${userId}`);
+  }
+
+  getCart(userId: number): Observable<ShoppingCart> {
+    return this.http.get<ShoppingCart>(`${this.toursUrl}/cart`, {
+      headers: { 'X-User-Id': String(userId) }
+    });
+  }
+
+  addToCart(userId: number, tourId: string): Observable<ShoppingCart> {
+    return this.http.post<ShoppingCart>(`${this.toursUrl}/cart/items/${tourId}`, {}, {
+      headers: { 'X-User-Id': String(userId) }
+    });
+  }
+
+  removeFromCart(userId: number, tourId: string): Observable<ShoppingCart> {
+    return this.http.delete<ShoppingCart>(`${this.toursUrl}/cart/items/${tourId}`, {
+      headers: { 'X-User-Id': String(userId) }
+    });
+  }
+
+  checkout(userId: number): Observable<TourPurchaseToken[]> {
+    return this.http.post<{ payload: TourPurchaseToken[] }>(`${this.sagasUrl}/checkout`, {}, {
+      headers: { 'X-User-Id': String(userId) }
+    }).pipe(map(response => response.payload));
+  }
+
+  getPurchaseTokens(userId: number): Observable<TourPurchaseToken[]> {
+    return this.http.get<TourPurchaseToken[]>(`${this.toursUrl}/purchases`, {
+      headers: { 'X-User-Id': String(userId) }
+    });
+  }
+
+  startExecution(userId: number, tourId: string): Observable<TourExecution> {
+    return this.http.post<{ payload: TourExecution }>(`${this.sagasUrl}/tours/${tourId}/execution/start`, {}, {
+      headers: { 'X-User-Id': String(userId) }
+    }).pipe(map(response => response.payload));
+  }
+
+  getActiveExecution(userId: number, tourId: string): Observable<TourExecution> {
+    return this.http.get<TourExecution>(`${this.toursUrl}/${tourId}/execution/active`, {
+      headers: { 'X-User-Id': String(userId) }
+    });
+  }
+
+  checkExecution(userId: number, tourId: string): Observable<TourExecution> {
+    return this.http.post<TourExecution>(`${this.toursUrl}/${tourId}/execution/check`, {}, {
+      headers: { 'X-User-Id': String(userId) }
+    });
+  }
+
+  completeExecution(userId: number, tourId: string): Observable<TourExecution> {
+    return this.http.post<TourExecution>(`${this.toursUrl}/${tourId}/execution/complete`, {}, {
+      headers: { 'X-User-Id': String(userId) }
+    });
+  }
+
+  abandonExecution(userId: number, tourId: string): Observable<TourExecution> {
+    return this.http.post<TourExecution>(`${this.toursUrl}/${tourId}/execution/abandon`, {}, {
+      headers: { 'X-User-Id': String(userId) }
+    });
   }
 }
