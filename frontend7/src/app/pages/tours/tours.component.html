@@ -78,11 +78,12 @@
             <span class="price-tag">{{ tour.price | currency:'EUR':'symbol':'1.0-2' }}</span>
           </div>
           <div class="tour-meta-row">
-            <span class="badge" [class.draft]="tour.status === 'DRAFT'" [class.published]="tour.status === 'PUBLISHED'">
+            <span class="badge" [class.draft]="tour.status === 'DRAFT'" [class.published]="tour.status === 'PUBLISHED'" [class.archived]="tour.status === 'ARCHIVED'">
               {{ tour.status }}
             </span>
             <span class="meta">{{ getDifficultyLabel(tour.difficulty) }}</span>
             <span class="meta">{{ tour.keyPoints.length }} tackica</span>
+            <span class="meta">{{ tour.distanceKm || 0 }} km</span>
           </div>
           <div class="tag-list" *ngIf="tour.tags && tour.tags.length > 0" style="margin-top:6px;">
             <span class="tag-chip-view" *ngFor="let tag of tour.tags">{{ tag }}</span>
@@ -114,10 +115,38 @@
             <span class="badge published">OBJAVLJENA</span>
             <span class="meta">{{ getDifficultyLabel(tour.difficulty) }}</span>
             <span class="meta">{{ tour.keyPoints.length }} tackica</span>
+            <span class="meta">{{ tour.distanceKm || 0 }} km</span>
           </div>
           <div class="tag-list" *ngIf="tour.tags && tour.tags.length > 0" style="margin-top:6px;">
             <span class="tag-chip-view" *ngFor="let tag of tour.tags">{{ tag }}</span>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── TOURIST: Shopping cart ───────────────────────────────────────── -->
+    <section class="box cart-box" *ngIf="!isGuide()">
+      <div class="section-row">
+        <h3>Korpa</h3>
+        <button type="button" [disabled]="isCartBusy" (click)="loadCart()">Osvezi</button>
+      </div>
+      <p *ngIf="!cart || cart.items.length === 0" class="meta">Korpa je prazna.</p>
+      <div class="cart-list" *ngIf="cart && cart.items.length > 0">
+        <div class="cart-item" *ngFor="let item of cart.items">
+          <div>
+            <strong>{{ item.tourName }}</strong>
+            <p class="meta">{{ item.price | currency:'EUR':'symbol':'1.0-2' }}</p>
+          </div>
+          <button type="button" class="danger-btn" [disabled]="isCartBusy" (click)="removeCartItem(item.tourId)">Ukloni</button>
+        </div>
+        <div class="cart-total">
+          <strong>Ukupno</strong>
+          <span>{{ cart.totalPrice | currency:'EUR':'symbol':'1.0-2' }}</span>
+        </div>
+        <div class="actions">
+          <button type="button" class="publish-btn" [disabled]="isCartBusy" (click)="checkout()">
+            {{ isCartBusy ? 'Obrada...' : 'Checkout' }}
+          </button>
         </div>
       </div>
     </section>
@@ -131,10 +160,19 @@
             <h3>{{ selectedTour.name }}</h3>
             <p class="meta">{{ selectedTour.description }}</p>
             <p class="meta">Kreirano: {{ formatDate(selectedTour.createdAt) }}</p>
+            <p class="meta" *ngIf="selectedTour.publishedAt">Objavljeno: {{ formatDate(selectedTour.publishedAt) }}</p>
+            <p class="meta" *ngIf="selectedTour.archivedAt">Arhivirano: {{ formatDate(selectedTour.archivedAt) }}</p>
+            <p class="meta">Duzina ture: {{ selectedTour.distanceKm || 0 }} km</p>
+            <p class="meta" *ngIf="getTransportEntries(selectedTour).length > 0">
+              Vremena obilaska:
+              <span *ngFor="let entry of getTransportEntries(selectedTour); let last = last">
+                {{ getTransportLabel(entry.type) }} {{ entry.minutes }} min<span *ngIf="!last">, </span>
+              </span>
+            </p>
           </div>
           <div class="tour-info-right">
             <span class="price-tag-large">{{ selectedTour.price | currency:'EUR':'symbol':'1.0-2' }}</span>
-            <span class="badge" [class.draft]="selectedTour.status === 'DRAFT'" [class.published]="selectedTour.status === 'PUBLISHED'">
+            <span class="badge" [class.draft]="selectedTour.status === 'DRAFT'" [class.published]="selectedTour.status === 'PUBLISHED'" [class.archived]="selectedTour.status === 'ARCHIVED'">
               {{ selectedTour.status }}
             </span>
             <span class="meta">{{ getDifficultyLabel(selectedTour.difficulty) }}</span>
@@ -142,6 +180,58 @@
         </div>
         <div class="tag-list" *ngIf="selectedTour.tags && selectedTour.tags.length > 0">
           <span class="tag-chip-view" *ngFor="let tag of selectedTour.tags">{{ tag }}</span>
+        </div>
+
+        <div class="tourist-purchase-controls" *ngIf="!isGuide()">
+          <p class="published-notice" *ngIf="isSelectedPurchased()">Tura je kupljena. Sve kljucne tacke su otkljucane.</p>
+          <p class="meta" *ngIf="!isSelectedPurchased()">Pre kupovine vidis samo pocetnu kljucnu tacku.</p>
+          <div class="actions">
+            <button
+              type="button"
+              class="publish-btn"
+              [disabled]="isCartBusy || selectedTour.status !== 'PUBLISHED' || isSelectedPurchased() || isSelectedInCart()"
+              (click)="addSelectedToCart()"
+            >
+              {{ isSelectedInCart() ? 'Vec je u korpi' : (isSelectedPurchased() ? 'Kupljena' : 'Dodaj u korpu') }}
+            </button>
+          </div>
+        </div>
+
+        <div class="execution-box" *ngIf="!isGuide() && isSelectedPurchased()">
+          <h4>Izvodjenje ture</h4>
+          <ng-container *ngIf="activeExecution && activeExecution.status === 'ACTIVE'; else noActiveExecution">
+            <p class="meta">Status: {{ activeExecution.status }}</p>
+            <p class="meta">Pocetak: {{ formatDate(activeExecution.startedAt) }}</p>
+            <p class="meta">Poslednja aktivnost: {{ formatDate(activeExecution.lastActivity) }}</p>
+            <p class="meta">
+              Dostignute tacke:
+              {{ activeExecution.completedKeyPoints.length }} / {{ selectedTour.keyPoints.length }}
+            </p>
+            <div class="execution-progress" *ngIf="activeExecution.completedKeyPoints.length > 0">
+              <span class="tag-chip-view" *ngFor="let completed of activeExecution.completedKeyPoints">
+                {{ completed.keyPointName }}
+              </span>
+            </div>
+            <div class="actions">
+              <button type="button" [disabled]="isExecutionBusy" (click)="checkExecutionProgress()">
+                Proveri poziciju
+              </button>
+              <button type="button" class="publish-btn" [disabled]="isExecutionBusy || !canCompleteExecution()" (click)="completeExecution()">
+                Zavrsi turu
+              </button>
+              <button type="button" class="danger-btn" [disabled]="isExecutionBusy" (click)="abandonExecution()">
+                Napusti turu
+              </button>
+            </div>
+          </ng-container>
+          <ng-template #noActiveExecution>
+            <p class="meta">Za pokretanje ture prvo sacuvaj trenutnu poziciju u simulatoru.</p>
+            <div class="actions">
+              <button type="button" class="publish-btn" [disabled]="isExecutionBusy || !currentPosition" (click)="startExecution()">
+                {{ isExecutionBusy ? 'Pokretanje...' : 'Pokreni turu' }}
+              </button>
+            </div>
+          </ng-template>
         </div>
 
         <!-- Guide: Edit + publish -->
@@ -157,6 +247,21 @@
               <select [(ngModel)]="editTourDifficulty" style="padding:10px 12px;border:1px solid #cab79b;border-radius:10px;background:rgba(255,253,250,.94);">
                 <option *ngFor="let d of difficulties" [value]="d.value">{{ d.label }}</option>
               </select>
+            </label>
+          </div>
+          <h4>Vremena obilaska</h4>
+          <div class="coord-grid">
+            <label>
+              Peske (min)
+              <input [(ngModel)]="editWalkingDuration" type="number" min="1" />
+            </label>
+            <label>
+              Bicikl (min)
+              <input [(ngModel)]="editBicycleDuration" type="number" min="1" />
+            </label>
+            <label>
+              Automobil (min)
+              <input [(ngModel)]="editCarDuration" type="number" min="1" />
             </label>
           </div>
           <label>Tagovi</label>
@@ -177,14 +282,18 @@
             </span>
           </div>
           <div class="actions">
-            <button type="button" class="publish-btn" [disabled]="isUpdatingTour || selectedTour.status === 'PUBLISHED'" (click)="publishTour()">
-              {{ selectedTour.status === 'PUBLISHED' ? 'Objavljena' : 'Objavi turu' }}
+            <button type="button" class="publish-btn" *ngIf="selectedTour.status !== 'PUBLISHED'" [disabled]="isUpdatingTour" (click)="selectedTour.status === 'ARCHIVED' ? reactivateTour() : publishTour()">
+              {{ selectedTour.status === 'ARCHIVED' ? 'Reaktiviraj turu' : 'Objavi turu' }}
+            </button>
+            <button type="button" class="danger-btn" *ngIf="selectedTour.status === 'PUBLISHED'" [disabled]="isUpdatingTour" (click)="archiveTour()">
+              Arhiviraj turu
             </button>
             <button type="button" [disabled]="isUpdatingTour" (click)="updateTourMeta()">
               {{ isUpdatingTour ? 'Cuvanje...' : 'Sacuvaj izmjene' }}
             </button>
           </div>
           <p class="published-notice" *ngIf="selectedTour.status === 'PUBLISHED'">Tura je objavljena i vidljiva turistima.</p>
+          <p class="published-notice archived-text" *ngIf="selectedTour.status === 'ARCHIVED'">Tura je arhivirana i moze se ponovo aktivirati.</p>
         </div>
       </section>
 

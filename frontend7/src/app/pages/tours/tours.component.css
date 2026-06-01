@@ -72,6 +72,11 @@ h2, h3, h4 {
   border-color: #b0cedf;
 }
 
+.cart-box {
+  background: rgba(246, 251, 247, 0.96);
+  border-color: #b7d7bd;
+}
+
 label {
   display: grid;
   gap: 6px;
@@ -220,6 +225,12 @@ button:disabled {
   border-color: #81c784;
 }
 
+.badge.archived {
+  background: #eceff1;
+  color: #455a64;
+  border-color: #b0bec5;
+}
+
 /* ── Price tags ────────────────────────────────────────────────────────── */
 
 .price-tag {
@@ -265,6 +276,25 @@ button:disabled {
   padding-top: 12px;
 }
 
+.tourist-purchase-controls {
+  border-top: 1px solid #e0c48a;
+  margin-top: 12px;
+  padding-top: 12px;
+}
+
+.execution-box {
+  border-top: 1px solid #e0c48a;
+  margin-top: 12px;
+  padding-top: 12px;
+}
+
+.execution-progress {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+}
+
 .price-edit-row {
   display: flex;
   gap: 10px;
@@ -276,6 +306,10 @@ button:disabled {
   font-size: 13px;
   color: #1b5e20;
   font-weight: 600;
+}
+
+.archived-text {
+  color: #455a64;
 }
 
 /* ── Map ────────────────────────────────────────────────────────────────── */
@@ -427,6 +461,30 @@ button:disabled {
 
 .position-display p {
   margin: 0 0 4px;
+}
+
+/* ── Cart ───────────────────────────────────────────────────────────────── */
+
+.cart-list {
+  display: grid;
+  gap: 8px;
+}
+
+.cart-item,
+.cart-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid #c7dfcc;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.cart-total {
+  background: rgba(232, 245, 233, 0.9);
+  color: #1b5e20;
 }
 
 /* ── Tags ───────────────────────────────────────────────────────────────── */
