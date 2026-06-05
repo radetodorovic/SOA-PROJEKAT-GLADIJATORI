@@ -77,6 +77,11 @@ h2, h3, h4 {
   border-color: #b7d7bd;
 }
 
+.purchased-box {
+  background: linear-gradient(180deg, rgba(243, 247, 255, 0.96), rgba(231, 238, 250, 0.92));
+  border-color: #b4c7e4;
+}
+
 label {
   display: grid;
   gap: 6px;
@@ -199,6 +204,27 @@ button:disabled {
   align-items: center;
   gap: 12px;
   margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.section-subcopy {
+  margin-bottom: 0;
+}
+
+.purchased-tour-item {
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.tour-note {
+  margin-top: 8px;
+}
+
+.inline-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 10px;
+  flex-wrap: wrap;
 }
 
 .badge {
@@ -573,6 +599,10 @@ button:disabled {
   }
 
   .price-edit-row {
+    flex-direction: column;
+  }
+
+  .inline-actions {
     flex-direction: column;
   }
 

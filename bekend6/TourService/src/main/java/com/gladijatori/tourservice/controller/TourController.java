@@ -2,6 +2,7 @@ package com.gladijatori.tourservice.controller;
 
 import com.gladijatori.tourservice.dto.*;
 import com.gladijatori.tourservice.model.TouristPosition;
+import com.gladijatori.tourservice.security.InternalEndpointGuard;
 import com.gladijatori.tourservice.service.TourService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ import java.util.List;
 public class TourController {
 
     private final TourService tourService;
+    private final InternalEndpointGuard internalEndpointGuard;
 
     // ── Tours ─────────────────────────────────────────────────────────────────
 
@@ -74,9 +76,46 @@ public class TourController {
         return ResponseEntity.ok(tourService.removeFromCart(userId, tourId));
     }
 
+    @PostMapping("/cart/checkout/validate")
+    public ResponseEntity<ShoppingCartResponseDto> validateCheckout(
+            @RequestHeader(value = "X-User-Id", defaultValue = "0") int userId,
+            @RequestHeader(value = "X-Internal-Api-Key", required = false) String internalApiKey) {
+        internalEndpointGuard.requireInternalAccess(internalApiKey);
+        return ResponseEntity.ok(tourService.validateCheckout(userId));
+    }
+
+    @PostMapping("/cart/checkout/prepare")
+    public ResponseEntity<PrepareCheckoutResponseDto> prepareCheckout(
+            @RequestHeader(value = "X-User-Id", defaultValue = "0") int userId,
+            @RequestHeader(value = "X-Internal-Api-Key", required = false) String internalApiKey) {
+        internalEndpointGuard.requireInternalAccess(internalApiKey);
+        return ResponseEntity.status(HttpStatus.CREATED).body(tourService.prepareCheckout(userId));
+    }
+
+    @PostMapping("/cart/checkout/{checkoutId}/confirm")
+    public ResponseEntity<List<TourPurchaseTokenResponseDto>> confirmCheckout(
+            @PathVariable String checkoutId,
+            @RequestHeader(value = "X-User-Id", defaultValue = "0") int userId,
+            @RequestHeader(value = "X-Internal-Api-Key", required = false) String internalApiKey) {
+        internalEndpointGuard.requireInternalAccess(internalApiKey);
+        return ResponseEntity.ok(tourService.confirmPendingCheckout(userId, checkoutId));
+    }
+
+    @PostMapping("/cart/checkout/{checkoutId}/cancel")
+    public ResponseEntity<Void> cancelCheckout(
+            @PathVariable String checkoutId,
+            @RequestHeader(value = "X-User-Id", defaultValue = "0") int userId,
+            @RequestHeader(value = "X-Internal-Api-Key", required = false) String internalApiKey) {
+        internalEndpointGuard.requireInternalAccess(internalApiKey);
+        tourService.cancelPendingCheckout(userId, checkoutId);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/cart/checkout")
     public ResponseEntity<List<TourPurchaseTokenResponseDto>> checkout(
-            @RequestHeader(value = "X-User-Id", defaultValue = "0") int userId) {
+            @RequestHeader(value = "X-User-Id", defaultValue = "0") int userId,
+            @RequestHeader(value = "X-Internal-Api-Key", required = false) String internalApiKey) {
+        internalEndpointGuard.requireInternalAccess(internalApiKey);
         return ResponseEntity.ok(tourService.checkout(userId));
     }
 
@@ -86,20 +125,54 @@ public class TourController {
         return ResponseEntity.ok(tourService.getPurchaseTokens(userId));
     }
 
+    @GetMapping("/purchased")
+    public ResponseEntity<List<TourResponseDto>> getPurchasedTours(
+            @RequestHeader(value = "X-User-Id", defaultValue = "0") int userId,
+            @RequestHeader(value = "X-Internal-Api-Key", required = false) String internalApiKey) {
+        internalEndpointGuard.requireInternalAccess(internalApiKey);
+        return ResponseEntity.ok(tourService.getPurchasedTours(userId));
+    }
+
     // ── Tour execution ────────────────────────────────────────────────────────
 
     @PostMapping("/{tourId}/execution/start")
     public ResponseEntity<TourExecutionResponseDto> startExecution(
             @PathVariable String tourId,
-            @RequestHeader(value = "X-User-Id", defaultValue = "0") int userId) {
+            @RequestHeader(value = "X-User-Id", defaultValue = "0") int userId,
+            @RequestHeader(value = "X-Internal-Api-Key", required = false) String internalApiKey) {
+        internalEndpointGuard.requireInternalAccess(internalApiKey);
         return ResponseEntity.status(HttpStatus.CREATED).body(tourService.startTourExecution(tourId, userId));
+    }
+
+    @PostMapping("/{tourId}/execution/start/prepare")
+    public ResponseEntity<PrepareExecutionStartResponseDto> prepareStartExecution(
+            @PathVariable String tourId,
+            @RequestHeader(value = "X-User-Id", defaultValue = "0") int userId,
+            @RequestHeader(value = "X-Internal-Api-Key", required = false) String internalApiKey) {
+        internalEndpointGuard.requireInternalAccess(internalApiKey);
+        return ResponseEntity.status(HttpStatus.CREATED).body(tourService.prepareStartTourExecution(tourId, userId));
+    }
+
+    @PostMapping("/{tourId}/execution/start/cancel")
+    public ResponseEntity<TourExecutionResponseDto> compensateStartExecution(
+            @PathVariable String tourId,
+            @RequestHeader(value = "X-User-Id", defaultValue = "0") int userId,
+            @RequestHeader(value = "X-Internal-Api-Key", required = false) String internalApiKey) {
+        internalEndpointGuard.requireInternalAccess(internalApiKey);
+        TourExecutionResponseDto response = tourService.compensateStartTourExecution(tourId, userId);
+        return response == null
+                ? ResponseEntity.noContent().build()
+                : ResponseEntity.ok(response);
     }
 
     @GetMapping("/{tourId}/execution/active")
     public ResponseEntity<TourExecutionResponseDto> getActiveExecution(
             @PathVariable String tourId,
             @RequestHeader(value = "X-User-Id", defaultValue = "0") int userId) {
-        return ResponseEntity.ok(tourService.getActiveExecution(tourId, userId));
+        TourExecutionResponseDto execution = tourService.getActiveExecution(tourId, userId);
+        return execution == null
+                ? ResponseEntity.noContent().build()
+                : ResponseEntity.ok(execution);
     }
 
     @PostMapping("/{tourId}/execution/check")

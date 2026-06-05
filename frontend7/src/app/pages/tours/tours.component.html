@@ -62,10 +62,10 @@
     <section class="box" *ngIf="isGuide()">
       <div class="section-row">
         <h3>Moje ture</h3>
-        <button type="button" [disabled]="isLoadingTours" (click)="loadMyTours()">Osvezi</button>
+        <button type="button" [disabled]="isLoadingGuideTours" (click)="loadMyTours()">Osvezi</button>
       </div>
-      <p *ngIf="isLoadingTours" class="meta">Ucitavanje...</p>
-      <p *ngIf="!isLoadingTours && myTours.length === 0" class="meta">Nemate kreiranih tura.</p>
+      <p *ngIf="isLoadingGuideTours" class="meta">Ucitavanje...</p>
+      <p *ngIf="!isLoadingGuideTours && myTours.length === 0" class="meta">Nemate kreiranih tura.</p>
       <div class="tour-list" *ngIf="myTours.length > 0">
         <div
           class="tour-item"
@@ -96,10 +96,10 @@
     <section class="box" *ngIf="!isGuide()">
       <div class="section-row">
         <h3>Dostupne ture</h3>
-        <button type="button" [disabled]="isLoadingTours" (click)="loadPublishedTours()">Osvezi</button>
+        <button type="button" [disabled]="isLoadingPublishedTours" (click)="loadPublishedTours()">Osvezi</button>
       </div>
-      <p *ngIf="isLoadingTours" class="meta">Ucitavanje...</p>
-      <p *ngIf="!isLoadingTours && publishedTours.length === 0" class="meta">Trenutno nema dostupnih tura.</p>
+      <p *ngIf="isLoadingPublishedTours" class="meta">Ucitavanje...</p>
+      <p *ngIf="!isLoadingPublishedTours && publishedTours.length === 0" class="meta">Trenutno nema dostupnih tura.</p>
       <div class="tour-list" *ngIf="publishedTours.length > 0">
         <div
           class="tour-item"
@@ -124,7 +124,58 @@
       </div>
     </section>
 
-    <!-- ── TOURIST: Shopping cart ───────────────────────────────────────── -->
+    <!-- TOURIST: Purchased tours -->
+    <section class="box purchased-box" *ngIf="!isGuide()">
+      <div class="section-row">
+        <div>
+          <h3>Moje kupljene ture</h3>
+          <p class="meta section-subcopy">Ovde ostaju i ture koje su kasnije arhivirane.</p>
+        </div>
+        <button type="button" [disabled]="isLoadingPurchasedTours" (click)="loadPurchasedTours()">Osvezi</button>
+      </div>
+      <p *ngIf="isLoadingPurchasedTours" class="meta">Ucitavanje...</p>
+      <p *ngIf="!isLoadingPurchasedTours && purchasedTours.length === 0" class="meta">Jos uvek nemate kupljenih tura.</p>
+      <div class="tour-list" *ngIf="purchasedTours.length > 0">
+        <div
+          class="tour-item purchased-tour-item"
+          [class.selected]="selectedTour?.id === tour.id"
+          *ngFor="let tour of purchasedTours"
+          (click)="selectTour(tour)"
+        >
+          <div class="tour-row">
+            <strong>{{ tour.name }}</strong>
+            <span class="price-tag">{{ tour.price | currency:'EUR':'symbol':'1.0-2' }}</span>
+          </div>
+          <div class="tour-meta-row">
+            <span class="badge" [class.published]="tour.status === 'PUBLISHED'" [class.archived]="tour.status === 'ARCHIVED'">
+              {{ tour.status === 'ARCHIVED' ? 'ARHIVIRANA' : 'KUPLJENA' }}
+            </span>
+            <span class="meta">{{ getDifficultyLabel(tour.difficulty) }}</span>
+            <span class="meta">{{ tour.keyPoints.length }} tackica</span>
+            <span class="meta">{{ tour.distanceKm || 0 }} km</span>
+          </div>
+          <p class="meta tour-note archived-text" *ngIf="tour.status === 'ARCHIVED'">
+            Ova tura je arhivirana, ali je i dalje dostupna jer ste je ranije kupili.
+          </p>
+          <div class="tag-list" *ngIf="tour.tags && tour.tags.length > 0" style="margin-top:6px;">
+            <span class="tag-chip-view" *ngFor="let tag of tour.tags">{{ tag }}</span>
+          </div>
+          <div class="inline-actions">
+            <button type="button" (click)="openTourDetails(tour, $event)">Detalji ture</button>
+            <button
+              type="button"
+              class="publish-btn"
+              [disabled]="!canStartPurchasedTour(tour)"
+              (click)="startPurchasedTour(tour, $event)"
+            >
+              Pokreni turu
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TOURIST: Shopping cart -->
     <section class="box cart-box" *ngIf="!isGuide()">
       <div class="section-row">
         <h3>Korpa</h3>
@@ -184,6 +235,9 @@
 
         <div class="tourist-purchase-controls" *ngIf="!isGuide()">
           <p class="published-notice" *ngIf="isSelectedPurchased()">Tura je kupljena. Sve kljucne tacke su otkljucane.</p>
+          <p class="published-notice archived-text" *ngIf="isSelectedPurchased() && selectedTour.status === 'ARCHIVED'">
+            Tura je arhivirana, ali je i dalje mozete pokrenuti zato sto je kupljena.
+          </p>
           <p class="meta" *ngIf="!isSelectedPurchased()">Pre kupovine vidis samo pocetnu kljucnu tacku.</p>
           <div class="actions">
             <button
@@ -461,3 +515,5 @@
     </ng-container>
   </article>
 </section>
+
+

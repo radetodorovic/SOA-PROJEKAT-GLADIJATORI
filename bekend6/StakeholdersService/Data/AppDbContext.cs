@@ -6,6 +6,7 @@ namespace StakeholdersService.Data;
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
     public DbSet<User> Users => Set<User>();
+    public DbSet<UserActivityLog> UserActivityLogs => Set<UserActivityLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -53,6 +54,28 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
             entity.Property(user => user.IsProfileInitialized)
                 .HasDefaultValue(false)
+                .IsRequired();
+        });
+
+        modelBuilder.Entity<UserActivityLog>(entity =>
+        {
+            entity.ToTable("UserActivityLogs");
+            entity.HasKey(activity => activity.Id);
+            entity.HasIndex(activity => activity.UserId);
+
+            entity.Property(activity => activity.ActivityType)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(activity => activity.ReferenceId)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(activity => activity.Description)
+                .HasColumnType("text")
+                .IsRequired();
+
+            entity.Property(activity => activity.CreatedAt)
                 .IsRequired();
         });
     }

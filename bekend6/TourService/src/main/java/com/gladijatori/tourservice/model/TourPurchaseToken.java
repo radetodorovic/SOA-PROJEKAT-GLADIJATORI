@@ -13,6 +13,8 @@ public class TourPurchaseToken {
     private String id;
     private int touristId;
     private String tourId;
+    private String checkoutId;
     private String token;
+    private PurchaseTokenStatus status;
     private LocalDateTime createdAt;
 }

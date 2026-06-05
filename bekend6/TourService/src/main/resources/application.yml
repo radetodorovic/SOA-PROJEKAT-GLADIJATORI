@@ -10,3 +10,6 @@ spring:
   jackson:
     serialization:
       write-dates-as-timestamps: false
+
+tour:
+  internal-api-key: ${TOUR_INTERNAL_API_KEY:tour-service-internal-dev-key}

@@ -69,6 +69,8 @@ export interface ShoppingCart {
 export interface TourPurchaseToken {
   tourId: string;
   token: string;
+  status?: string;
+  checkoutId?: string | null;
   createdAt: string;
 }
 

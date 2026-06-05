@@ -4,6 +4,7 @@ import com.gladijatori.tourservice.dto.*;
 import com.gladijatori.tourservice.model.CompletedKeyPoint;
 import com.gladijatori.tourservice.model.KeyPoint;
 import com.gladijatori.tourservice.model.OrderItem;
+import com.gladijatori.tourservice.model.PurchaseTokenStatus;
 import com.gladijatori.tourservice.model.Review;
 import com.gladijatori.tourservice.model.ShoppingCart;
 import com.gladijatori.tourservice.model.Tour;
@@ -17,6 +18,8 @@ import com.gladijatori.tourservice.repository.TourPurchaseTokenRepository;
 import com.gladijatori.tourservice.repository.TourRepository;
 import com.gladijatori.tourservice.repository.TouristPositionRepository;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -27,11 +30,13 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class TourService {
+    private static final Logger log = LoggerFactory.getLogger(TourService.class);
     private static final String DRAFT = "DRAFT";
     private static final String PUBLISHED = "PUBLISHED";
     private static final String ARCHIVED = "ARCHIVED";
@@ -113,7 +118,14 @@ public class TourService {
 
     public TourResponseDto getTourById(String id, int userId) {
         Tour tour = getTourOrThrow(id);
-        boolean includeAllKeyPoints = tour.getAuthorId() == userId || hasPurchaseToken(userId, id);
+        boolean isAuthor = isAuthor(tour, userId);
+        boolean hasPurchaseToken = hasConfirmedPurchaseToken(userId, tour.getId());
+
+        if (!canAccessTour(tour, isAuthor, hasPurchaseToken)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Tura nije pronadjena.");
+        }
+
+        boolean includeAllKeyPoints = isAuthor || hasPurchaseToken;
         return mapToResponse(tour, includeAllKeyPoints);
     }
 
@@ -131,7 +143,7 @@ public class TourService {
         if (tour.getAuthorId() == touristId) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Autor ne moze kupiti svoju turu.");
         }
-        if (hasPurchaseToken(touristId, tourId)) {
+        if (hasConfirmedPurchaseToken(touristId, tourId)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tura je vec kupljena.");
         }
 
@@ -157,37 +169,114 @@ public class TourService {
     }
 
     public List<TourPurchaseTokenResponseDto> checkout(int touristId) {
-        requireUser(touristId);
-        ShoppingCart cart = getOrCreateCart(touristId);
-        if (cart.getItems().isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Korpa je prazna.");
-        }
-
-        for (OrderItem item : cart.getItems()) {
-            Tour tour = getTourOrThrow(item.getTourId());
-            if (!PUBLISHED.equals(tour.getStatus())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tura vise nije dostupna za kupovinu: " + tour.getName());
+        String checkoutId = null;
+        try {
+            PrepareCheckoutResponseDto prepared = prepareCheckout(touristId);
+            checkoutId = prepared.checkoutId();
+            return confirmPendingCheckout(touristId, checkoutId);
+        } catch (RuntimeException ex) {
+            if (checkoutId != null) {
+                cancelPendingCheckout(touristId, checkoutId);
             }
+            throw ex;
+        }
+    }
+
+    public ShoppingCartResponseDto validateCheckout(int touristId) {
+        return mapCartToResponse(validateCheckoutState(touristId).cart());
+    }
+
+    public PrepareCheckoutResponseDto prepareCheckout(int touristId) {
+        ValidatedCheckout validatedCheckout = validateCheckoutState(touristId);
+        String checkoutId = UUID.randomUUID().toString();
+        LocalDateTime now = LocalDateTime.now();
+
+        List<TourPurchaseToken> pendingTokens = validatedCheckout.tours().stream()
+                .map(tour -> buildPendingToken(touristId, tour.getId(), checkoutId, now))
+                .toList();
+
+        try {
+            List<TourPurchaseTokenResponseDto> tokens = purchaseTokenRepository.saveAll(pendingTokens).stream()
+                    .map(this::mapPurchaseTokenToResponse)
+                    .toList();
+            return new PrepareCheckoutResponseDto(checkoutId, tokens);
+        } catch (Exception ex) {
+            cancelPendingCheckout(touristId, checkoutId);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Kreiranje PENDING tokena nije uspelo.", ex);
+        }
+    }
+
+    public List<TourPurchaseTokenResponseDto> confirmPendingCheckout(int touristId, String checkoutId) {
+        requireUser(touristId);
+        List<TourPurchaseToken> pendingTokens = getPendingTokensOrThrow(touristId, checkoutId);
+        ShoppingCart cart = getOrCreateCart(touristId);
+        ShoppingCart originalCart = copyCart(cart);
+
+        try {
+            pendingTokens.forEach(token -> token.setStatus(PurchaseTokenStatus.CONFIRMED));
+            List<TourPurchaseToken> confirmedTokens = purchaseTokenRepository.saveAll(pendingTokens);
+
+            List<String> purchasedTourIds = confirmedTokens.stream()
+                    .map(TourPurchaseToken::getTourId)
+                    .toList();
+            cart.getItems().removeIf(item -> purchasedTourIds.contains(item.getTourId()));
+            recalculateCartTotal(cart);
+            cartRepository.save(cart);
+
+            return confirmedTokens.stream()
+                    .map(this::mapPurchaseTokenToResponse)
+                    .toList();
+        } catch (Exception ex) {
+            rollbackFailedCheckoutConfirmation(originalCart, pendingTokens);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Potvrda checkout-a nije uspela.", ex);
+        }
+    }
+
+    public void cancelPendingCheckout(int touristId, String checkoutId) {
+        requireUser(touristId);
+        List<TourPurchaseToken> pendingTokens = purchaseTokenRepository.findByTouristIdAndCheckoutIdAndStatus(
+                touristId, checkoutId, PurchaseTokenStatus.PENDING);
+        if (pendingTokens.isEmpty()) {
+            return;
         }
 
-        List<TourPurchaseTokenResponseDto> tokens = new ArrayList<>();
-        for (OrderItem item : cart.getItems()) {
-            Tour tour = getTourOrThrow(item.getTourId());
-            TourPurchaseToken token = purchaseTokenRepository.findByTouristIdAndTourId(touristId, tour.getId())
-                    .orElseGet(() -> createPurchaseToken(touristId, tour.getId()));
-            tokens.add(mapPurchaseTokenToResponse(token));
+        pendingTokens.forEach(token -> token.setStatus(PurchaseTokenStatus.CANCELLED));
+        purchaseTokenRepository.saveAll(pendingTokens);
+    }
+
+    private void rollbackFailedCheckoutConfirmation(ShoppingCart originalCart, List<TourPurchaseToken> tokens) {
+        try {
+            cartRepository.save(originalCart);
+        } catch (Exception ignored) {
         }
 
-        cart.getItems().clear();
-        recalculateCartTotal(cart);
-        cartRepository.save(cart);
-        return tokens;
+        try {
+            tokens.forEach(token -> token.setStatus(PurchaseTokenStatus.PENDING));
+            purchaseTokenRepository.saveAll(tokens);
+        } catch (Exception ignored) {
+        }
     }
 
     public List<TourPurchaseTokenResponseDto> getPurchaseTokens(int touristId) {
         requireUser(touristId);
         return purchaseTokenRepository.findByTouristId(touristId).stream()
+                .filter(this::isConfirmedToken)
                 .map(this::mapPurchaseTokenToResponse)
+                .toList();
+    }
+
+    public List<TourResponseDto> getPurchasedTours(int touristId) {
+        requireUser(touristId);
+        return purchaseTokenRepository.findByTouristId(touristId).stream()
+                .filter(this::isConfirmedToken)
+                .map(TourPurchaseToken::getTourId)
+                .distinct()
+                .map(tourRepository::findById)
+                .flatMap(Optional::stream)
+                .filter(tour -> PUBLISHED.equals(tour.getStatus()) || ARCHIVED.equals(tour.getStatus()))
+                .map(tour -> mapToResponse(tour, true))
                 .toList();
     }
 
@@ -294,17 +383,25 @@ public class TourService {
     }
 
     public TourExecutionResponseDto startTourExecution(String tourId, int touristId) {
+        return prepareStartTourExecution(tourId, touristId).execution();
+    }
+
+    public PrepareExecutionStartResponseDto prepareStartTourExecution(String tourId, int touristId) {
         requireUser(touristId);
         Tour tour = getTourOrThrow(tourId);
         if (!PUBLISHED.equals(tour.getStatus()) && !ARCHIVED.equals(tour.getStatus())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mogu se pokrenuti samo objavljene ili arhivirane ture.");
         }
-        if (!hasPurchaseToken(touristId, tourId)) {
+        if (!hasConfirmedPurchaseToken(touristId, tourId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tura mora biti kupljena pre pokretanja.");
         }
 
         return tourExecutionRepository.findByTouristIdAndTourIdAndStatus(touristId, tourId, EXECUTION_ACTIVE)
-                .map(this::mapExecutionToResponse)
+                .map(existing -> {
+                    log.info("StartTourExecutionSaga prepare reused existing ACTIVE execution. touristId={}, tourId={}, executionId={}",
+                            touristId, tourId, existing.getId());
+                    return new PrepareExecutionStartResponseDto(mapExecutionToResponse(existing), false);
+                })
                 .orElseGet(() -> {
                     TouristPosition position = getPosition(touristId);
                     LocalDateTime now = LocalDateTime.now();
@@ -317,13 +414,39 @@ public class TourService {
                     execution.setStartedAt(now);
                     execution.setLastActivity(now);
                     execution.setCompletedKeyPoints(new ArrayList<>());
-                    return mapExecutionToResponse(tourExecutionRepository.save(execution));
+                    TourExecution savedExecution = tourExecutionRepository.save(execution);
+                    log.info("StartTourExecutionSaga prepare created ACTIVE execution. touristId={}, tourId={}, executionId={}",
+                            touristId, tourId, savedExecution.getId());
+                    return new PrepareExecutionStartResponseDto(mapExecutionToResponse(savedExecution), true);
                 });
+    }
+
+    public TourExecutionResponseDto compensateStartTourExecution(String tourId, int touristId) {
+        requireUser(touristId);
+        Optional<TourExecution> activeExecution = tourExecutionRepository.findByTouristIdAndTourIdAndStatus(
+                touristId, tourId, EXECUTION_ACTIVE);
+        if (activeExecution.isEmpty()) {
+            log.info("StartTourExecutionSaga compensation skipped because ACTIVE execution does not exist. touristId={}, tourId={}",
+                    touristId, tourId);
+            return null;
+        }
+
+        TourExecution execution = activeExecution.get();
+        LocalDateTime now = LocalDateTime.now();
+        execution.setStatus(EXECUTION_ABANDONED);
+        execution.setAbandonedAt(now);
+        execution.setLastActivity(now);
+        TourExecution savedExecution = tourExecutionRepository.save(execution);
+        log.info("StartTourExecutionSaga compensation abandoned ACTIVE execution. touristId={}, tourId={}, executionId={}",
+                touristId, tourId, savedExecution.getId());
+        return mapExecutionToResponse(savedExecution);
     }
 
     public TourExecutionResponseDto getActiveExecution(String tourId, int touristId) {
         requireUser(touristId);
-        return mapExecutionToResponse(getActiveExecutionOrThrow(touristId, tourId));
+        return tourExecutionRepository.findByTouristIdAndTourIdAndStatus(touristId, tourId, EXECUTION_ACTIVE)
+                .map(this::mapExecutionToResponse)
+                .orElse(null);
     }
 
     public TourExecutionResponseDto checkKeyPointProximity(String tourId, int touristId) {
@@ -392,6 +515,20 @@ public class TourService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tura nije pronadjena."));
     }
 
+    private boolean canAccessTour(Tour tour, boolean isAuthor, boolean hasPurchaseToken) {
+        if (isAuthor) {
+            return true;
+        }
+        if (PUBLISHED.equals(tour.getStatus())) {
+            return true;
+        }
+        return ARCHIVED.equals(tour.getStatus()) && hasPurchaseToken;
+    }
+
+    private boolean isAuthor(Tour tour, int userId) {
+        return userId > 0 && tour.getAuthorId() == userId;
+    }
+
     private void requireAuthor(Tour tour, int userId, String message) {
         if (userId <= 0) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "X-User-Id header je obavezan.");
@@ -407,8 +544,10 @@ public class TourService {
         }
     }
 
-    private boolean hasPurchaseToken(int touristId, String tourId) {
-        return touristId > 0 && purchaseTokenRepository.existsByTouristIdAndTourId(touristId, tourId);
+    private boolean hasConfirmedPurchaseToken(int touristId, String tourId) {
+        return touristId > 0 && purchaseTokenRepository.findByTouristIdAndTourId(touristId, tourId)
+                .map(this::isConfirmedToken)
+                .orElse(false);
     }
 
     private ShoppingCart getOrCreateCart(int touristId) {
@@ -429,13 +568,75 @@ public class TourService {
         cart.setTotalPrice(Math.round(total * 100.0) / 100.0);
     }
 
-    private TourPurchaseToken createPurchaseToken(int touristId, String tourId) {
-        TourPurchaseToken token = new TourPurchaseToken();
+    private ValidatedCheckout validateCheckoutState(int touristId) {
+        requireUser(touristId);
+        ShoppingCart cart = getOrCreateCart(touristId);
+        if (cart.getItems().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Korpa je prazna.");
+        }
+
+        List<Tour> tours = new ArrayList<>();
+        for (OrderItem item : cart.getItems()) {
+            Tour tour = getTourOrThrow(item.getTourId());
+            if (!PUBLISHED.equals(tour.getStatus())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tura vise nije dostupna za kupovinu: " + tour.getName());
+            }
+            if (tour.getAuthorId() == touristId) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Autor ne moze kupiti svoju turu.");
+            }
+            if (hasConfirmedPurchaseToken(touristId, tour.getId())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tura je vec kupljena: " + tour.getName());
+            }
+            tours.add(tour);
+        }
+
+        return new ValidatedCheckout(cart, tours);
+    }
+
+    private TourPurchaseToken buildPendingToken(int touristId, String tourId, String checkoutId, LocalDateTime createdAt) {
+        Optional<TourPurchaseToken> existingToken = purchaseTokenRepository.findByTouristIdAndTourId(touristId, tourId);
+        if (existingToken.isPresent() && isConfirmedToken(existingToken.get())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tura je vec kupljena.");
+        }
+        TourPurchaseToken token = existingToken.orElseGet(TourPurchaseToken::new);
+
         token.setTouristId(touristId);
         token.setTourId(tourId);
+        token.setCheckoutId(checkoutId);
         token.setToken(UUID.randomUUID().toString());
-        token.setCreatedAt(LocalDateTime.now());
-        return purchaseTokenRepository.save(token);
+        token.setStatus(PurchaseTokenStatus.PENDING);
+        token.setCreatedAt(createdAt);
+        return token;
+    }
+
+    private ShoppingCart copyCart(ShoppingCart source) {
+        ShoppingCart copy = new ShoppingCart();
+        copy.setId(source.getId());
+        copy.setTouristId(source.getTouristId());
+        copy.setItems(source.getItems().stream().map(this::copyOrderItem).toList());
+        copy.setTotalPrice(source.getTotalPrice());
+        return copy;
+    }
+
+    private OrderItem copyOrderItem(OrderItem source) {
+        OrderItem copy = new OrderItem();
+        copy.setTourId(source.getTourId());
+        copy.setTourName(source.getTourName());
+        copy.setPrice(source.getPrice());
+        return copy;
+    }
+
+    private List<TourPurchaseToken> getPendingTokensOrThrow(int touristId, String checkoutId) {
+        List<TourPurchaseToken> pendingTokens = purchaseTokenRepository.findByTouristIdAndCheckoutIdAndStatus(
+                touristId, checkoutId, PurchaseTokenStatus.PENDING);
+        if (pendingTokens.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "PENDING checkout tokeni nisu pronadjeni.");
+        }
+        return pendingTokens;
+    }
+
+    private boolean isConfirmedToken(TourPurchaseToken token) {
+        return token.getStatus() == null || token.getStatus() == PurchaseTokenStatus.CONFIRMED;
     }
 
     private TourExecution getActiveExecutionOrThrow(int touristId, String tourId) {
@@ -582,7 +783,15 @@ public class TourService {
     }
 
     private TourPurchaseTokenResponseDto mapPurchaseTokenToResponse(TourPurchaseToken token) {
-        return new TourPurchaseTokenResponseDto(token.getTourId(), token.getToken(), token.getCreatedAt());
+        String status = token.getStatus() != null
+                ? token.getStatus().name()
+                : PurchaseTokenStatus.CONFIRMED.name();
+        return new TourPurchaseTokenResponseDto(
+                token.getTourId(),
+                token.getToken(),
+                status,
+                token.getCheckoutId(),
+                token.getCreatedAt());
     }
 
     private TourExecutionResponseDto mapExecutionToResponse(TourExecution execution) {
@@ -606,5 +815,8 @@ public class TourService {
                 review.getId(), review.getTourId(), review.getUserId(),
                 review.getUsername(), review.getRating(), review.getComment(),
                 review.getVisitDate(), review.getImageUrls(), review.getCreatedAt());
+    }
+
+    private record ValidatedCheckout(ShoppingCart cart, List<Tour> tours) {
     }
 }

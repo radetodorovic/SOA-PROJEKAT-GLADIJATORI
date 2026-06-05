@@ -3,7 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import * as L from 'leaflet';
 import { ToursService } from '../../services/tours.service';
-import { Tour, KeyPoint, Review, TouristPosition, ShoppingCart, TourPurchaseToken, TourExecution } from '../../models/tour';
+import { Tour, KeyPoint, Review, TouristPosition, ShoppingCart, TourExecution } from '../../models/tour';
 
 type AppRole = 'Admin' | 'Guide' | 'Tourist';
 
@@ -47,9 +47,11 @@ export class ToursComponent implements OnInit, OnDestroy {
   // ── Tour lists ──────────────────────────────────────────────────────────────
   myTours: Tour[] = [];
   publishedTours: Tour[] = [];
-  isLoadingTours = false;
+  purchasedTours: Tour[] = [];
+  isLoadingGuideTours = false;
+  isLoadingPublishedTours = false;
+  isLoadingPurchasedTours = false;
   cart: ShoppingCart | null = null;
-  purchaseTokens: TourPurchaseToken[] = [];
   isCartBusy = false;
   activeExecution: TourExecution | null = null;
   isExecutionBusy = false;
@@ -117,8 +119,8 @@ export class ToursComponent implements OnInit, OnDestroy {
       this.loadMyTours();
     } else {
       this.loadPublishedTours();
+      this.loadPurchasedTours();
       this.loadCart();
-      this.loadPurchaseTokens();
     }
 
     this.loadMyPosition();
@@ -145,26 +147,67 @@ export class ToursComponent implements OnInit, OnDestroy {
 
   loadMyTours(): void {
     if (!this.currentUser) return;
-    this.isLoadingTours = true;
+    this.isLoadingGuideTours = true;
     this.toursService.getToursByAuthor(this.currentUser.id).subscribe({
-      next: tours => { this.myTours = tours; this.isLoadingTours = false; },
-      error: () => { this.errorMessage = 'Neuspesno ucitavanje tura.'; this.isLoadingTours = false; }
+      next: tours => { this.myTours = tours; this.isLoadingGuideTours = false; },
+      error: () => { this.errorMessage = 'Neuspesno ucitavanje tura.'; this.isLoadingGuideTours = false; }
     });
   }
 
   loadPublishedTours(): void {
-    this.isLoadingTours = true;
+    this.isLoadingPublishedTours = true;
     this.toursService.getPublishedTours().subscribe({
-      next: tours => { this.publishedTours = tours; this.isLoadingTours = false; },
-      error: () => { this.errorMessage = 'Neuspjesno ucitavanje tura.'; this.isLoadingTours = false; }
+      next: tours => { this.publishedTours = tours; this.isLoadingPublishedTours = false; },
+      error: () => { this.errorMessage = 'Neuspjesno ucitavanje tura.'; this.isLoadingPublishedTours = false; }
+    });
+  }
+
+  loadPurchasedTours(): void {
+    if (!this.currentUser || this.isGuide()) return;
+    this.isLoadingPurchasedTours = true;
+    this.toursService.getPurchasedTours(this.currentUser.id).subscribe({
+      next: tours => {
+        this.purchasedTours = tours;
+        this.isLoadingPurchasedTours = false;
+      },
+      error: (err: HttpErrorResponse) => {
+        this.purchasedTours = [];
+        this.errorMessage = err.error?.message ?? 'Neuspjesno ucitavanje kupljenih tura.';
+        this.isLoadingPurchasedTours = false;
+      }
     });
   }
 
   selectTour(tour: Tour): void {
+    this.loadTourDetails(tour);
+  }
+
+  openTourDetails(tour: Tour, event?: Event): void {
+    event?.stopPropagation();
+    this.loadTourDetails(tour);
+  }
+
+  startPurchasedTour(tour: Tour, event?: Event): void {
+    event?.stopPropagation();
+    if (!this.currentPosition) {
+      this.errorMessage = 'Za pokretanje ture prvo sacuvaj trenutnu poziciju u simulatoru.';
+      this.successMessage = '';
+      return;
+    }
+    this.loadTourDetails(tour, () => this.startExecution());
+  }
+
+  private loadTourDetails(tour: Tour, afterLoad?: () => void): void {
     if (!this.currentUser) return;
     this.toursService.getTourById(tour.id, this.currentUser.id).subscribe({
-      next: fullTour => this.applySelectedTour(fullTour),
-      error: () => this.applySelectedTour(tour)
+      next: fullTour => {
+        this.applySelectedTour(fullTour);
+        afterLoad?.();
+      },
+      error: () => {
+        this.applySelectedTour(tour);
+        afterLoad?.();
+      }
     });
   }
 
@@ -262,7 +305,7 @@ export class ToursComponent implements OnInit, OnDestroy {
     this.loadReviews(tour.id);
     this.activeExecution = null;
     this.stopExecutionTimer();
-    if (!this.isGuide()) {
+    if (!this.isGuide() && this.isTourPurchased(tour.id)) {
       this.loadActiveExecution(tour.id);
     }
     this.clearMessages();
@@ -281,14 +324,6 @@ export class ToursComponent implements OnInit, OnDestroy {
     this.toursService.getCart(this.currentUser.id).subscribe({
       next: cart => this.cart = cart,
       error: () => this.cart = null
-    });
-  }
-
-  loadPurchaseTokens(): void {
-    if (!this.currentUser || this.isGuide()) return;
-    this.toursService.getPurchaseTokens(this.currentUser.id).subscribe({
-      next: tokens => this.purchaseTokens = tokens,
-      error: () => this.purchaseTokens = []
     });
   }
 
@@ -330,11 +365,11 @@ export class ToursComponent implements OnInit, OnDestroy {
     if (!this.currentUser || this.isCartBusy) return;
     this.isCartBusy = true;
     this.toursService.checkout(this.currentUser.id).subscribe({
-      next: tokens => {
-        this.purchaseTokens = [...tokens, ...this.purchaseTokens.filter(existing => !tokens.some(t => t.tourId === existing.tourId))];
+      next: () => {
         this.loadCart();
         this.loadPublishedTours();
-        if (this.selectedTour && tokens.some(t => t.tourId === this.selectedTour!.id)) {
+        this.loadPurchasedTours();
+        if (this.selectedTour) {
           this.selectTour(this.selectedTour);
         }
         this.successMessage = 'Kupovina je uspesno zavrsena.';
@@ -349,11 +384,22 @@ export class ToursComponent implements OnInit, OnDestroy {
   }
 
   isSelectedPurchased(): boolean {
-    return !!this.selectedTour && this.purchaseTokens.some(token => token.tourId === this.selectedTour!.id);
+    return !!this.selectedTour && this.isTourPurchased(this.selectedTour.id);
   }
 
   isSelectedInCart(): boolean {
     return !!this.selectedTour && !!this.cart?.items.some(item => item.tourId === this.selectedTour!.id);
+  }
+
+  isTourPurchased(tourId: string): boolean {
+    return this.purchasedTours.some(tour => tour.id === tourId);
+  }
+
+  canStartPurchasedTour(tour: Tour): boolean {
+    return !!this.currentPosition
+      && !this.isExecutionBusy
+      && this.isTourPurchased(tour.id)
+      && (tour.status === 'PUBLISHED' || tour.status === 'ARCHIVED');
   }
 
   // ── Tour execution ──────────────────────────────────────────────────────────
@@ -363,7 +409,11 @@ export class ToursComponent implements OnInit, OnDestroy {
     this.toursService.getActiveExecution(this.currentUser.id, tourId).subscribe({
       next: execution => {
         this.activeExecution = execution;
-        this.startExecutionTimer();
+        if (execution) {
+          this.startExecutionTimer();
+        } else {
+          this.stopExecutionTimer();
+        }
       },
       error: () => {
         this.activeExecution = null;

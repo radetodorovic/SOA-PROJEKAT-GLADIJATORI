@@ -38,6 +38,12 @@ export class ToursService {
     return this.http.get<Tour[]>(`${this.toursUrl}/published`);
   }
 
+  getPurchasedTours(userId: number): Observable<Tour[]> {
+    return this.http.get<Tour[]>(`${this.toursUrl}/purchased`, {
+      headers: { 'X-User-Id': String(userId) }
+    });
+  }
+
   getTourById(tourId: string, userId: number): Observable<Tour> {
     return this.http.get<Tour>(`${this.toursUrl}/${tourId}`, {
       headers: { 'X-User-Id': String(userId) }
@@ -131,8 +137,8 @@ export class ToursService {
     }).pipe(map(response => response.payload));
   }
 
-  getActiveExecution(userId: number, tourId: string): Observable<TourExecution> {
-    return this.http.get<TourExecution>(`${this.toursUrl}/${tourId}/execution/active`, {
+  getActiveExecution(userId: number, tourId: string): Observable<TourExecution | null> {
+    return this.http.get<TourExecution | null>(`${this.toursUrl}/${tourId}/execution/active`, {
       headers: { 'X-User-Id': String(userId) }
     });
   }
