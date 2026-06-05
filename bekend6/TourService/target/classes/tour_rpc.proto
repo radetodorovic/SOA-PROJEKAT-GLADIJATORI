@@ -1,0 +1,161 @@
+syntax = "proto3";
+
+import "google/protobuf/wrappers.proto";
+
+option java_multiple_files = true;
+option java_package = "com.gladijatori.tourservice.grpc";
+option java_outer_classname = "TourRpcProto";
+option csharp_namespace = "ApiGateway.Grpc";
+
+package tourrpc;
+
+service TourRpc {
+  rpc GetPublishedTours (GetPublishedToursRequest) returns (TourListReply);
+  rpc GetTourById (GetTourByIdRequest) returns (TourReply);
+  rpc CreateTour (CreateTourRequest) returns (TourReply);
+  rpc UpdateTour (UpdateTourRequest) returns (TourReply);
+  rpc AddKeyPoint (AddKeyPointRequest) returns (TourReply);
+  rpc AddToCart (AddToCartRequest) returns (ShoppingCartReply);
+  rpc Checkout (CheckoutRequest) returns (PurchaseTokenListReply);
+  rpc StartTourExecution (TourExecutionActionRequest) returns (TourExecutionReply);
+  rpc CheckExecutionProgress (TourExecutionActionRequest) returns (TourExecutionReply);
+  rpc CompleteExecution (TourExecutionActionRequest) returns (TourExecutionReply);
+  rpc AbandonExecution (TourExecutionActionRequest) returns (TourExecutionReply);
+}
+
+message GetPublishedToursRequest {
+}
+
+message GetTourByIdRequest {
+  string id = 1;
+  int32 user_id = 2;
+}
+
+message CreateTourRequest {
+  int32 user_id = 1;
+  string name = 2;
+  string description = 3;
+  double price = 4;
+  string difficulty = 5;
+  repeated string tags = 6;
+}
+
+message UpdateTourRequest {
+  string id = 1;
+  int32 user_id = 2;
+  google.protobuf.StringValue name = 3;
+  google.protobuf.StringValue description = 4;
+  google.protobuf.DoubleValue price = 5;
+  google.protobuf.StringValue difficulty = 6;
+  google.protobuf.StringValue status = 7;
+  TransportDurationsInput transport_durations = 8;
+  StringList tags = 9;
+}
+
+message AddKeyPointRequest {
+  string tour_id = 1;
+  int32 user_id = 2;
+  string name = 3;
+  string description = 4;
+  google.protobuf.DoubleValue latitude = 5;
+  google.protobuf.DoubleValue longitude = 6;
+  string image_url = 7;
+  int32 order = 8;
+}
+
+message AddToCartRequest {
+  int32 user_id = 1;
+  string tour_id = 2;
+}
+
+message CheckoutRequest {
+  int32 user_id = 1;
+}
+
+message TourExecutionActionRequest {
+  string tour_id = 1;
+  int32 user_id = 2;
+}
+
+message TransportDurationsInput {
+  map<string, int32> values = 1;
+}
+
+message StringList {
+  repeated string values = 1;
+}
+
+message TourListReply {
+  repeated TourReply tours = 1;
+}
+
+message TourReply {
+  string id = 1;
+  int32 author_id = 2;
+  string name = 3;
+  string description = 4;
+  string status = 5;
+  string difficulty = 6;
+  double price = 7;
+  double distance_km = 8;
+  map<string, int32> transport_durations = 9;
+  repeated KeyPointReply key_points = 10;
+  repeated string tags = 11;
+  string created_at = 12;
+  string published_at = 13;
+  string archived_at = 14;
+}
+
+message KeyPointReply {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  double latitude = 4;
+  double longitude = 5;
+  string image_url = 6;
+  int32 order = 7;
+}
+
+message ShoppingCartReply {
+  int32 tourist_id = 1;
+  repeated OrderItemReply items = 2;
+  double total_price = 3;
+}
+
+message OrderItemReply {
+  string tour_id = 1;
+  string tour_name = 2;
+  double price = 3;
+}
+
+message PurchaseTokenListReply {
+  repeated TourPurchaseTokenReply tokens = 1;
+}
+
+message TourPurchaseTokenReply {
+  string tour_id = 1;
+  string token = 2;
+  string status = 3;
+  string checkout_id = 4;
+  string created_at = 5;
+}
+
+message TourExecutionReply {
+  string id = 1;
+  string tour_id = 2;
+  int32 tourist_id = 3;
+  string status = 4;
+  double start_latitude = 5;
+  double start_longitude = 6;
+  string started_at = 7;
+  string completed_at = 8;
+  string abandoned_at = 9;
+  string last_activity = 10;
+  repeated CompletedKeyPointReply completed_key_points = 11;
+}
+
+message CompletedKeyPointReply {
+  string key_point_id = 1;
+  string key_point_name = 2;
+  string reached_at = 3;
+}

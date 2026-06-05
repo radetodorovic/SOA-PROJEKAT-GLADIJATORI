@@ -1,0 +1,3 @@
+com/gladijatori/tourservice/controller/TourControllerTest.class
+com/gladijatori/tourservice/service/TourServiceTest.class
+com/gladijatori/tourservice/security/InternalEndpointGuardTest.class
