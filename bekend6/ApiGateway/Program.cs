@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -5,6 +6,9 @@ using System.Text.RegularExpressions;
 using ApiGateway.Grpc;
 using Grpc.Core;
 using Grpc.Net.Client;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+using StatusCode = Grpc.Core.StatusCode;
 
 const string TourServiceInternalApiKeyHeader = "X-Internal-Api-Key";
 const string SimulatePaymentFailureHeader = "X-Simulate-Payment-Failure";
@@ -12,7 +16,23 @@ const string SimulateExecutionActivityFailureHeader = "X-Simulate-Execution-Acti
 
 var builder = WebApplication.CreateBuilder(args);
 
+Activity.DefaultIdFormat = ActivityIdFormat.W3C;
+Activity.ForceDefaultIdFormat = true;
+
 AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
+
+builder.Services
+    .AddOpenTelemetry()
+    .ConfigureResource(resource => resource.AddService(
+        builder.Configuration["OpenTelemetry:ServiceName"] ?? "api-gateway"))
+    .WithTracing(tracing => tracing
+        .AddAspNetCoreInstrumentation()
+        .AddHttpClientInstrumentation()
+        .AddOtlpExporter(options =>
+        {
+            options.Endpoint = new Uri(
+                builder.Configuration["OpenTelemetry:OtlpEndpoint"] ?? "http://localhost:4317");
+        }));
 
 builder.Services.AddHttpClient("gateway-proxy", client =>
 {
