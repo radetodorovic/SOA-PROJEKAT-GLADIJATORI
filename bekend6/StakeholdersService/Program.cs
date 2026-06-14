@@ -1,9 +1,28 @@
+using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using StakeholdersService.Data;
 using StakeholdersService.Repositories;
 using StakeholdersService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+Activity.DefaultIdFormat = ActivityIdFormat.W3C;
+Activity.ForceDefaultIdFormat = true;
+
+builder.Services
+    .AddOpenTelemetry()
+    .ConfigureResource(resource => resource.AddService(
+        builder.Configuration["OpenTelemetry:ServiceName"] ?? "stakeholders-service"))
+    .WithTracing(tracing => tracing
+        .AddAspNetCoreInstrumentation()
+        .AddHttpClientInstrumentation()
+        .AddOtlpExporter(options =>
+        {
+            options.Endpoint = new Uri(
+                builder.Configuration["OpenTelemetry:OtlpEndpoint"] ?? "http://localhost:4317");
+        }));
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
